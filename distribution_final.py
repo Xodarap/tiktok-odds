@@ -9,15 +9,9 @@ Created on Sat May 30 15:43:49 2020
 import psycopg2
 import matplotlib.pyplot as plt
 import numpy as np
-#from numpy import histogram
-from scipy.stats import beta
-from scipy.stats import expon
-from scipy.stats import gamma
 from scipy.special import gamma as gamma_function
 from scipy.special import gammaln
-from scipy.optimize import minimize
 from scipy import optimize
-from scipy.integrate import quad
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
@@ -69,8 +63,8 @@ def bootstrap(results):
     return params
         
 def display_table(alpha, beta, new_alpha, new_beta):
-    old_beta_est = alpha / beta #quad(lambda x: x*ben_gamma(x, alpha, beta), 0, 4)[0]
-    new_beta_est = new_alpha / new_beta #quad(lambda x: x*ben_gamma(x, new_alpha, new_beta), 0, 4)[0]
+    old_beta_est = alpha / beta 
+    new_beta_est = new_alpha / new_beta 
     x = np.linspace(0,20,100)
     plt.figure()
     plt.plot(x, ben_gamma(x, 1.4215833596, old_beta_est), label = 'prior')
@@ -100,5 +94,3 @@ personal_results = cur.fetchall()
 alpha, beta = bootstrap(all_results)
 new_alpha, new_beta = update(alpha, beta, personal_results)
 display_table(alpha, beta, new_alpha, new_beta)
-
-#update(prior, personal_results)
