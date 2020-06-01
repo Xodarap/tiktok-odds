@@ -22,8 +22,6 @@ from scipy.integrate import quad
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
-def ben_normal_gamma(x, alpha, beta = 1):
-    return (np.power(beta, alpha)/gamma_function(alpha)) * np.power(x, alpha - 1) * np.exp(-beta * x)
 def log_gamma(x, alpha, beta):
     return np.exp(sum([alpha * np.log(beta),
                        -gammaln(alpha), 
@@ -32,10 +30,6 @@ def log_gamma(x, alpha, beta):
 def ben_gamma(x, alpha, beta = 1, location = 0, scale = 1):
     y = (x - location) / scale
     return log_gamma(y, alpha, beta) / scale
-def posterior(l, alpha, beta, n, xbar):
-    return np.power(l, alpha + n - 1) * np.exp(-l * (beta + n + xbar))
-def gamma_2(x, k, theta):
-    return np.power(x, k-1) * np.exp(-x/theta) / (gamma_function(k) * np.power(theta, k))
 def update(alpha, beta, results):
     logviews = np.repeat([np.log10(r[1]) for r in results if r[1] > 0], 1)
     new_alpha = alpha + len(logviews)
