@@ -77,6 +77,33 @@ def display_table(alpha, beta, new_alpha, new_beta):
     print([[alpha, beta, old_beta_est, old_expectation, np.power(10, old_expectation)],
            [new_alpha, new_beta, new_beta_est, new_expectation, np.power(10, new_expectation)]])
 
+def expected_views(n,total,aprior,bprior):
+    n=int(n)
+    total=float(total)
+    aprior=float(aprior)
+    bprior=float(bprior)
+    total=n*np.log10(total/n)
+    apos=aprior+n
+    bpos=bprior+total
+    b=apos/bpos
+    lviews=1.42158/b
+    views=10**lviews
+    return views
+    
+'''
+var n = parseInt($("#num").val());
+var total = parseInt($('#total').val());
+if(isNaN(total) || isNaN(n)) { return; }
+total = n*Math.log10(total/n); // dodgy - assume each video got the same # of views
+var alpha0 = 264.769 + n;
+var beta0 = 405.25 + total;
+var beta = alpha0/beta0;
+var lviews = 1.42158 / beta;
+var views = Math.pow(10, lviews);
+$('#expectation').val(views);
+'''
+
+
 cur.execute("""
             SELECT id, play_count 
             FROM tiktok_normalized
@@ -88,9 +115,14 @@ all_results = cur.fetchall()
 cur.execute("""
             SELECT id, play_count 
             FROM tiktok_normalized
-            where author = 'charlidamelio'
+            where author = 'benthamite'
             """)
 personal_results = cur.fetchall()
 alpha, beta = bootstrap(all_results)
 new_alpha, new_beta = update(alpha, beta, personal_results)
 display_table(alpha, beta, new_alpha, new_beta)
+#v=expected_views(10,10000,alpha,beta)
+#print(f'{v:,.2f}')
+#print(f'{expected_views(10,1000,alpha,beta):,.2f}')
+#print(f'{expected_views(10,100,alpha,beta):,.2f}')
+#print(f'{expected_views(97,3435984275,alpha,beta):,.2f}')
