@@ -47,7 +47,7 @@ for row in all_results:
     except:
         print('Error')
         continue
-    time.sleep(randint(5, 15))
+    time.sleep(randint(1, 10))
 #print(f'Saved {tag_count} tags and {music_count} songs.')
 
 cur.close()
