@@ -21,7 +21,8 @@ cur.execute("""
             SELECT *
             FROM tiktok_normalized_table
             where representative = true
-            and create_time >= '2020-01-01'
+            and create_time >= '2019-01-01'
+            and create_time < '2020-01-01'
             """)
 all_results = cur.fetchall()
 cur.close()
@@ -63,7 +64,6 @@ def process_results(xlm,ylm,single_transform = lambda x: x):
     
     ols = sm.OLS(y.values, X_with_intercept)
     ols_result = ols.fit()
-    #print(ols_result.summary())
     
     clf = RidgeCV(alphas=[1e-3, 1e-2, 1e-1, 1, 5, 10, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8]).fit(X, y)
     reg = LassoCV(cv=5, random_state=0).fit(X, y)
@@ -98,6 +98,7 @@ def process_results(xlm,ylm,single_transform = lambda x: x):
                            columns = ['Shares', 'Comments', 'Likes', 'Intercept', 'Alpha', 'R^2'])
     print(results)
 
+plt.figure()
 process_results(xlm, ylm)
 plt.figure()
 process_results(xlm, ylm, np.log)

@@ -33,6 +33,7 @@ where author not in (
     from tiktok.users
 	where json->'userInfo'->'user'->>'uniqueId' is not null
 )
+and create_time >= '2020-01-01'
 ''')
 all_results = cur.fetchall()
 for row in all_results:
@@ -42,6 +43,7 @@ for row in all_results:
     try:
         userData = ben_api.getUser(author)
         new_t=json.dumps(userData)
+        print(new_t)
         cur.execute('INSERT INTO tiktok.users (fetch_time,json) VALUES (%s,%s);', (t_time,new_t))
         conn.commit()
     except:
