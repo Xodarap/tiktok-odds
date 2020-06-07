@@ -18,11 +18,12 @@ import statsmodels.api as sm
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 cur.execute("""
-            SELECT *
-            FROM tiktok_normalized_table
+            SELECT id, v.author, play_count, share_count, comment_count, like_count, 
+            total_likes, video_count, follower_count, following_count, bio = ''
+            FROM tiktok_normalized_table v
+            inner join tiktok.users_normalized n on n.author = v.author
             where representative = true
-            and create_time >= '2019-01-01'
-            and create_time < '2020-01-01'
+            and create_time >= '2020-01-01'
             """)
 all_results = cur.fetchall()
 cur.close()
@@ -31,7 +32,8 @@ ylm=[]
     
 for r in all_results:
     if r[2]<1e6:
-        xlm.append([r[3],r[4],r[5]])
+        xlm.append(list(r[3:11]))
+        #xlm.append([r[3], r[4], r[5]])
         ylm.append(r[2])
 
 
@@ -52,8 +54,8 @@ def transform(value, single_transform = lambda x: x):
 def process_results(xlm,ylm,single_transform = lambda x: x):
     xlm = [transform(row,single_transform) for row in xlm]
     ylm = [transform(row,single_transform) for row in ylm]
-    X=pd.DataFrame(xlm,columns=['shares','comments','likes'])
-    y=pd.DataFrame(ylm,columns=['views'])
+    X=pd.DataFrame(xlm)
+    y=pd.DataFrame(ylm)
     
     N = len(X)
     p = len(X.columns) + 1  # plus one because LinearRegression adds an intercept term
@@ -66,7 +68,8 @@ def process_results(xlm,ylm,single_transform = lambda x: x):
     ols_result = ols.fit()
     
     clf = RidgeCV(alphas=[1e-3, 1e-2, 1e-1, 1, 5, 10, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8]).fit(X, y)
-    reg = LassoCV(cv=5, random_state=0).fit(X, y)
+    reg = LassoCV(cv=5, random_state=0, 
+                  alphas=[1e-3, 1e-2, 1e-1, 1, 5, 10, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8]).fit(X, y)
     
     plt.subplot(131)
     plt.plot(clf.predict(X), y, '.')
@@ -95,10 +98,13 @@ def process_results(xlm,ylm,single_transform = lambda x: x):
                             [*clf.coef_[0], *clf.intercept_, clf.alpha_, r2_score(clf.predict(X), y)],
                             [*ols_result.params, 'N/A', ols_result.rsquared]], 
                            index = ['Lasso', 'Ridge', 'OLS'],
-                           columns = ['Shares', 'Comments', 'Likes', 'Intercept', 'Alpha', 'R^2'])
+                           columns = ['Shares', 'Comments', 'Likes', 
+                                      'total_likes', 'video_count', 'follower_count', 'following_count', 'bio',
+                                      'Intercept', 'Alpha', 'R^2'])
     print(results)
+    return results
 
 plt.figure()
-process_results(xlm, ylm)
+normal_results = process_results(xlm, ylm)
 plt.figure()
-process_results(xlm, ylm, np.log)
+log_results = process_results(xlm, ylm, np.log)
