@@ -34,11 +34,11 @@ ylm=[]
 
 independent_variables = ['Shares', 'Comments', 'Likes', 'Follower Count',
                          'Following Count', 'Bio is empty', 'Any Hashtags',
-                         'Any tagged users', 'Is Commerce', 'Tag-Plays']
+                         'Any tagged users', 'Is Commerce', 'Tag-Likes']
 used_variables = independent_variables #['Likes', 'Tag-Plays']
 
 for r in all_results:
-    if r[2]<1e5:
+    if r[2]<1e7:
         xlm.append(list(r[3:3+len(independent_variables)]))
         ylm.append(r[2])
   
