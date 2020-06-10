@@ -33,7 +33,6 @@ where author not in (
     from tiktok.users
 	where json->'userInfo'->'user'->>'uniqueId' is not null
 )
-and create_time >= '2020-01-01'
 ''')
 all_results = cur.fetchall()
 for row in all_results:
