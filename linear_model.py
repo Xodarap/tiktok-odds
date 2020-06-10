@@ -14,13 +14,14 @@ from sklearn.linear_model import RidgeCV
 from sklearn.linear_model import LassoCV
 from sklearn.metrics import r2_score
 import statsmodels.api as sm
+from sklearn.preprocessing import PolynomialFeatures
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 cur.execute("""
             SELECT id, v.author, play_count, share_count, comment_count, like_count, 
             follower_count, following_count, bio ='', any_hashtags, any_tagged_users,
-            is_commerce, case when any_hashtags then like_count else 0 end
+            is_commerce
             FROM tiktok.videos_materialized v
             inner join tiktok.users_normalized n on n.author = v.author
             where representative = true
@@ -34,17 +35,18 @@ ylm=[]
 
 independent_variables = ['Shares', 'Comments', 'Likes', 'Follower Count',
                          'Following Count', 'Bio is empty', 'Any Hashtags',
-                         'Any tagged users', 'Is Commerce', 'Tag-Likes']
-used_variables = independent_variables #['Likes', 'Tag-Plays']
+                         'Any tagged users', 'Is Commerce'] 
+used_variables = independent_variables
 
 for r in all_results:
-    if r[2]<1e7:
+    if r[2]<1e5:
         xlm.append(list(r[3:3+len(independent_variables)]))
         ylm.append(r[2])
   
 def process_results(xlm,ylm,single_transform = lambda x: x):
     X = xlm.applymap(single_transform)
     y = ylm.applymap(single_transform)
+    independent_variables = list(X.columns)
     
     X_with_intercept = xlm.copy()
     X_with_intercept['Intercept'] = 1
@@ -111,3 +113,12 @@ plt.figure()
 normal_results = process_results(df_used, ydf)
 plt.figure()
 log_results = process_results(df_used, ydf, lambda x: np.log(x) if x > 0 else 0)
+
+poly = PolynomialFeatures(2, interaction_only = True)
+poly_fit = poly.fit_transform(df_used, ydf)
+poly_df = pd.DataFrame(poly_fit, columns = poly.get_feature_names(df_used.columns))
+poly_df['Index'] = poly_df.index
+df_used['Index'] = df_used.index
+merged_df = pd.merge(poly_df, df_used, on = ['Index'] + used_variables)
+plt.figure()
+merged_results = process_results(merged_df, ydf)
