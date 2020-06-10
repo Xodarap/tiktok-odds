@@ -21,9 +21,10 @@ cur = conn.cursor()
 cur.execute("""
             SELECT id, v.author, play_count, share_count, comment_count, like_count, 
             follower_count, following_count, bio ='', any_hashtags, any_tagged_users,
-            is_commerce
+            is_commerce, expected_views
             FROM tiktok.videos_materialized v
             inner join tiktok.users_normalized n on n.author = v.author
+            inner join tiktok.expected_views e on e.author = v.author
             where representative = true
             and create_time >= '2020-01-01'
             """)
@@ -35,7 +36,8 @@ ylm=[]
 
 independent_variables = ['Shares', 'Comments', 'Likes', 'Follower Count',
                          'Following Count', 'Bio is empty', 'Any Hashtags',
-                         'Any tagged users', 'Is Commerce'] 
+                         'Any tagged users', 'Is Commerce', 'Expected Views'] 
+simple_variables = ['Likes', 'Expected Views']
 used_variables = independent_variables
 
 for r in all_results:
@@ -80,10 +82,10 @@ def process_results(xlm,ylm,single_transform = lambda x: x):
     plt.title('OLS')
     plt.xlabel('Predicted')
     
-    simple_x = X_with_intercept[['Likes', 'Intercept']]
+    simple_x = X_with_intercept[simple_variables + ['Intercept']]
     simple_ols = sm.OLS(y.values, simple_x.values)
     simple_ols_result = simple_ols.fit()
-    simple_output = [simple_ols_result.params[0] if var == 'Likes' else 'N/A' for var in independent_variables]
+    simple_output = [simple_ols_result.params[simple_variables.index(var)] if var in simple_variables else 'N/A' for var in independent_variables]
     
     plt.subplot(234)
     plt.plot(simple_ols_result.fittedvalues, y, '.')
@@ -96,11 +98,11 @@ def process_results(xlm,ylm,single_transform = lambda x: x):
     results = pd.DataFrame([[*reg.coef_, reg.intercept_, reg.alpha_, r2_score(reg.predict(X), y)],
                             [*clf.coef_[0], *clf.intercept_, clf.alpha_, r2_score(clf.predict(X), y)],
                             [*ols_result.params, 'N/A', r2_score(ols_result.fittedvalues, y)],
-                            [*simple_output, simple_ols_result.params[1], 'N/A', r2_score(simple_ols_result.fittedvalues, y)]], 
+                            [*simple_output, simple_ols_result.params[len(simple_variables)], 'N/A', r2_score(simple_ols_result.fittedvalues, y)]], 
                            index = ['Lasso', 'Ridge', 'OLS', 'OLS-Likes only'],
                            columns = independent_variables +
                                       ['Intercept', 'Alpha', 'R^2'])
-    print(results)
+    print(results.T)
     return results
 
 def clean_df(df):
