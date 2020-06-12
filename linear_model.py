@@ -41,7 +41,7 @@ simple_variables = ['Likes', 'Expected Views']
 used_variables = independent_variables
 
 for r in all_results:
-    if r[2]<1e5:
+    if r[2]<1e7:
         xlm.append(list(r[3:3+len(independent_variables)]))
         ylm.append(r[2])
   

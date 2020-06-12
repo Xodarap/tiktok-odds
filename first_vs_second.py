@@ -34,11 +34,12 @@ df['Likes'] = [r[3] for r in res]
 first_views = df[df['First'] == 1]['Views']
 later_views = df[df['First'] == 2]['Views']
 n_bins=200
-plt.hist(first_views, n_bins, facecolor='blue', alpha=0.5,density=True)
-plt.hist(later_views, n_bins, facecolor='red', alpha=0.5,density=True)
+plt.hist(first_views, n_bins, facecolor='blue', alpha=0.5,density=True, label = 'First videos')
+plt.hist(later_views, n_bins, facecolor='red', alpha=0.5,density=True, label = 'Second videos')
 plt.title('View counts of first and second videos')
 plt.ylabel('Probability Density')
-plt.ylabel('Log10(Views)')
+plt.xlabel('Log10(Views)')
+plt.legend()
 print(f'First average: {np.mean(first_views)}. Later average: {np.mean(later_views)}')
 print(stats.ks_2samp(first_views, later_views))
 
@@ -48,11 +49,15 @@ nonzero = df[df['Likes'] > 0]
 nonzero['Ratio'] = nonzero['Views'] / nonzero['Likes']
 first_ratio = nonzero[nonzero['First'] == 1]['Ratio']
 second_ratio = nonzero[nonzero['First'] == 2]['Ratio']
-n_bins=200
-plt.hist(first_ratio, n_bins, facecolor='blue', alpha=0.5,density=True)
-plt.hist(second_ratio, n_bins, facecolor='red', alpha=0.5,density=True)
+n_bins=50
+plt.hist(first_ratio, n_bins, facecolor='blue', alpha=0.5,density=True, label = 'First videos')
+plt.hist(second_ratio, n_bins, facecolor='red', alpha=0.5,density=True, label = 'Second videos')
+plt.title('View/like ratio of first and second videos')
+plt.ylabel('Probability Density')
+plt.xlabel('Log10(Views)/Likes')
+plt.legend()
 print(f'First average: {np.mean(first_ratio)}. Later average: {np.mean(second_ratio)}')
-print(stats.ttest_ind(first_ratio, second_ratio))
+print(stats.ks_2samp(first_ratio, second_ratio))
 
 def safe_log(x):
     if isinstance(x, Iterable):
@@ -92,9 +97,12 @@ first = result_df[result_df['Number'] == 1]
 second = result_df[result_df['Number'] == 2]
 merged = first.merge(second, on = ['Author'])
 merged['Ratio'] = merged['Views_y'] / merged['Views_x']
-avg_ratio = np.mean(merged['Ratio'])
+avg_ratio = np.mean(removeOutliers(merged['Ratio'],100))
 plt.figure()
 plt.hist(removeOutliers(merged['Ratio'], 3), n_bins, facecolor='blue', alpha=0.5,density=True)
+plt.title('Second video / First video view count ratios')
+plt.ylabel('Probability Density')
+plt.xlabel('Second video views / First video views')
 print(f'Ratio: {avg_ratio}.')
 print(wilcoxon(merged['Views_x'], merged['Views_y']))
 
