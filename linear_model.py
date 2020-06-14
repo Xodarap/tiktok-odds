@@ -37,7 +37,7 @@ ylm=[]
 independent_variables = ['Shares', 'Comments', 'Likes', 'Follower Count',
                          'Following Count', 'Bio is empty', 'Any Hashtags',
                          'Any tagged users', 'Is Commerce', 'Expected Views'] 
-simple_variables = ['Likes', 'Expected Views']
+simple_variables = ['Likes']
 used_variables = independent_variables
 
 for r in all_results:
@@ -91,7 +91,7 @@ def process_results(xlm,ylm,single_transform = lambda x: x):
     plt.plot(simple_ols_result.fittedvalues, y, '.')
     plt.yticks([])
     plt.ticklabel_format(axis="both", style="sci", scilimits=(0,0))
-    plt.title('Simple OLS')
+    plt.title('OLS - Likes Only')
     plt.xlabel('Predicted')
     
     
@@ -113,8 +113,10 @@ df_used = clean_df(df[used_variables])
 ydf = pd.DataFrame(ylm)
 plt.figure()
 normal_results = process_results(df_used, ydf)
+plt.tight_layout()
 plt.figure()
 log_results = process_results(df_used, ydf, lambda x: np.log(x) if x > 0 else 0)
+plt.tight_layout()
 
 poly = PolynomialFeatures(2, interaction_only = True)
 poly_fit = poly.fit_transform(df_used, ydf)
@@ -124,3 +126,4 @@ df_used['Index'] = df_used.index
 merged_df = pd.merge(poly_df, df_used, on = ['Index'] + used_variables)
 plt.figure()
 merged_results = process_results(merged_df, ydf)
+plt.tight_layout()
