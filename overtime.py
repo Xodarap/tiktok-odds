@@ -18,10 +18,10 @@ from collections.abc import Iterable
 from scipy.stats import wilcoxon
 
 
-conn=psycopg2.connect('dbname=postgres user=postgres password=0FFzm4282FW^')
+conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
-cur.execute("""select
+cur.execute("""select all_data.id,
     all_data.play_count,
     all_data.share_count,
     all_data.comment_count,
@@ -50,25 +50,32 @@ cur.execute("""select
             bool_or(text_extra.is_commerce) AS is_commerce
            FROM tiktok.text_extra
           GROUP BY text_extra.id) te ON te.id = all_data.id
-		  --where all_data.id = 6837152281259969797
-        where all_data.id = 6838386972445248773
+		 where all_data.id = 6837152281259969797
+        or all_data.id = 6838386972445248773
           order by fetch_time asc
 """)
 
 res=cur.fetchall()
-result_df = pd.DataFrame(res, columns = ['Views', 'Shares', 'Comments', 'Likes', 'Create Time', 'Fetch Time', 'Elapsed Time'])
+result_df = pd.DataFrame(res, columns = ['ID', 'Views', 'Shares', 'Comments', 'Likes', 'Create Time', 'Fetch Time', 'Elapsed Time'])
 
-                     
-fig, ax = plt.subplots(1,3, sharey = 'row')
+                    
 
 def make_plot(df, ax, x, y, y2):
-    ax.plot(df[x], df[y], 'b-')
+    l1, = ax.plot(df[x], df[y], 'b-', label = y)
     ax2 = ax.twinx()
-    ax2.plot(df[x], df[y2], 'r-')
+    l2, = ax2.plot(df[x], df[y2], 'r-', label = y2)
     ax.set_title(y2)
+    ax.legend(handles = [l1, l2])
 
-make_plot(result_df, ax[0], 'Elapsed Time', 'Views', 'Likes')
-make_plot(result_df, ax[1], 'Elapsed Time', 'Views', 'Shares')
-make_plot(result_df, ax[2], 'Elapsed Time', 'Views', 'Comments')
-#fig.
-plt.tight_layout()
+def run_subset(df, ident):
+    fig, ax = plt.subplots(1,3, sharey = 'row')
+    result_df = df[df['ID'] == ident]
+    make_plot(result_df, ax[0], 'Elapsed Time', 'Views', 'Likes')
+    make_plot(result_df, ax[1], 'Elapsed Time', 'Views', 'Shares')
+    make_plot(result_df, ax[2], 'Elapsed Time', 'Views', 'Comments')
+    plt.tight_layout()
+    ax[0].set_ylabel('Views')
+    ax[1].set_xlabel('Minutes since publication')
+
+for ident in np.unique(result_df['ID']):
+    run_subset(result_df, ident)
