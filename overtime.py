@@ -68,8 +68,11 @@ def make_plot(df, ax, x, y, y2):
     ax.legend(handles = [l1, l2])
 
 def run_subset(df, ident):
-    fig, ax = plt.subplots(1,3, sharey = 'row')
     result_df = df[df['ID'] == ident]
+    #plt.plot(result_df['Elapsed Time'], result_df['Views'])
+    #plt.ylabel('Views')
+    #plt.xlabel('Seconds since publication')
+    fig, ax = plt.subplots(1,3, sharey = 'row')
     make_plot(result_df, ax[0], 'Elapsed Time', 'Views', 'Likes')
     make_plot(result_df, ax[1], 'Elapsed Time', 'Views', 'Shares')
     make_plot(result_df, ax[2], 'Elapsed Time', 'Views', 'Comments')
@@ -79,3 +82,14 @@ def run_subset(df, ident):
 
 for ident in np.unique(result_df['ID']):
     run_subset(result_df, ident)
+
+fig, ax = plt.subplots(1,1)
+result_df['Time in Seconds'] = [t.timestamp() for t in result_df['Fetch Time']]
+ids = np.unique(result_df['ID'])
+one = result_df[result_df['ID'] == ids[0]]
+two = result_df[result_df['ID'] == ids[1]]
+l1, = ax.plot(one['Time in Seconds'], one['Views'], label = 'Video 1')
+l2, = ax.plot(two['Time in Seconds'], two['Views'], label = 'Video 2')
+ax.set_ylabel('Views')
+ax.set_xlabel('Seconds since publication')
+ax.legend(handles = [l1, l2])
