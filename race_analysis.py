@@ -9,8 +9,6 @@ Created on Wed Jun 24 10:25:23 2020
 import psycopg2
 import numpy as np
 import pandas as pd
-from clarifai.rest import ClarifaiApp
-import json
 from scipy.stats import chi2_contingency
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
@@ -34,15 +32,16 @@ def run_analysis(df):
     print(gender_table)
     print(chi2_contingency(gender_table)[1])
     race_table = pd.crosstab(df['source.race'], df['rec.race'])
+    print(race_table)
     print(chi2_contingency(race_table)[1])
     race = df[np.all([df['source.race'] != 'Unknown', df['rec.race'] != 'Unknown'], 0)]
-    race['source.white'] = race['source.race'] == 'white'
-    race['rec.white'] = race['rec.race'] == 'white'
+    race.loc[:, 'source.white'] = race['source.race'] == 'white'
+    race.loc[:, 'rec.white'] = race['rec.race'] == 'white'
     white_table = pd.crosstab(race['source.white'], race['rec.white'])
     print(white_table)
     print(chi2_contingency(white_table)[1])
-    race['source.black'] = race['source.race'] == 'black or african american'
-    race['rec.black'] = race['rec.race'] == 'black or african american'
+    race.loc[:, 'source.black'] = race['source.race'] == 'black or african american'
+    race.loc[:, 'rec.black'] = race['rec.race'] == 'black or african american'
     black_table = pd.crosstab(race['source.black'], race['rec.black'])
     print(black_table)
     print(chi2_contingency(black_table)[1])
@@ -129,7 +128,7 @@ manual_override(df, '@zoelaverne', 'Female', 'white')
 run_analysis(df)
 
 def representation(df):
-    race = df[np.all([df['source.race'] != 'Unknown', df['rec.race'] != 'Unknown'], 0)]
+    race = df.loc[np.all([df['source.race'] != 'Unknown', df['rec.race'] != 'Unknown'], 0)]
     race_table = pd.crosstab(race['source.race'], race['rec.race'])
     info = []
     total = np.sum(np.sum(race_table))
@@ -144,4 +143,6 @@ def representation(df):
     info_df = pd.DataFrame(info, columns = ['Race', 'Source #', 'Source %', 'Rec #', 'Rec %'])
     #print(f'Source: {source_rep/total}. Rec: {rec_rep/total}')
     print(info_df)
+    con = info_df[['Source #', 'Rec #']]
+    print(chi2_contingency(con)[1])
 representation(df)
