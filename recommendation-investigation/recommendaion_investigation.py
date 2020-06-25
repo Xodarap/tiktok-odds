@@ -20,6 +20,7 @@ select source_username, source.gender, source.race,
     from tiktok.race_check
     inner join tiktok.clarifai_data source on source.username = source_username
     inner join tiktok.clarifai_data rec on rec.username = recommended_username
+    where tiktok.race_check.old is null
 """)
 
 res=cur.fetchall()
@@ -31,7 +32,8 @@ def run_analysis(df):
     gender_table = pd.crosstab(gender['source.gender'], gender['rec.gender'])
     print(gender_table)
     print(chi2_contingency(gender_table)[1])
-    race_table = pd.crosstab(df['source.race'], df['rec.race'])
+    race = df.loc[np.all([df['source.race'] != 'Unknown', df['rec.race'] != 'Unknown'], 0)]
+    race_table = pd.crosstab(race['source.race'], race['rec.race'])
     print(race_table)
     print(chi2_contingency(race_table)[1])
     race = df[np.all([df['source.race'] != 'Unknown', df['rec.race'] != 'Unknown'], 0)]
@@ -45,6 +47,7 @@ def run_analysis(df):
     black_table = pd.crosstab(race['source.black'], race['rec.black'])
     print(black_table)
     print(chi2_contingency(black_table)[1])
+    return race_table
 
 
 def manual_override(df, username, gender = None, race = None):
@@ -125,11 +128,12 @@ manual_override(df, '@sia', 'Female', 'white')
 manual_override(df, '@panicatthedisco', 'Male', 'white')
 manual_override(df, '@thechainsmokers', 'Male', 'white')
 manual_override(df, '@zoelaverne', 'Female', 'white')
-run_analysis(df)
+race_table = run_analysis(df)
 
 def representation(df):
     race = df.loc[np.all([df['source.race'] != 'Unknown', df['rec.race'] != 'Unknown'], 0)]
     race_table = pd.crosstab(race['source.race'], race['rec.race'])
+    saved = race
     info = []
     total = np.sum(np.sum(race_table))
     all_races = np.unique(np.append(race_table.index.values, race_table.columns.values))
@@ -145,5 +149,6 @@ def representation(df):
     print(info_df)
     con = info_df[['Source #', 'Rec #']]
     print(chi2_contingency(con)[1])
-representation(df)
+    return saved
+rep = representation(df)
 conn.close()
