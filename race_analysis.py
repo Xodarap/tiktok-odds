@@ -146,3 +146,4 @@ def representation(df):
     con = info_df[['Source #', 'Rec #']]
     print(chi2_contingency(con)[1])
 representation(df)
+conn.close()
