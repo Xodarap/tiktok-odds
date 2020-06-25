@@ -49,6 +49,7 @@ def run_analysis(df):
     print(chi2_contingency(black_table)[1])
     return race_table
 
+run_analysis(df)
 
 def manual_override(df, username, gender = None, race = None):
     if gender:
@@ -58,76 +59,77 @@ def manual_override(df, username, gender = None, race = None):
         df.loc[df['source_username']==username, 'source.race'] = race
         df.loc[df['recommended_username']==username, 'rec.race'] = race
 
-run_analysis(df)
-manual_override(df, '@therock', 'Male')
-manual_override(df, '@addisonre', 'Female', 'white')
-manual_override(df, '@avani', 'Female', 'white')
-manual_override(df, '@avneetkaur_13', 'Female', 'asian')
-manual_override(df, '@babyariel', None, 'white')
-manual_override(df, '@brentrivera', None, 'white')
-manual_override(df, '@charlidamelio', 'Female', 'white')
-manual_override(df, '@cznburak', None, 'middle eastern or north african')
-manual_override(df, '@dixiedamelio', 'Female', 'white')
-manual_override(df, '@dobretwins', None, 'white')
-manual_override(df, '@gima_ashi', None, 'white')
-manual_override(df, '@jacobsartorius', 'Male', 'white')
-manual_override(df, '@jasoncoffee', 'Male', None)
-manual_override(df, '@joealbanese', 'Male', 'white')
-manual_override(df, '@justmaiko', 'Male', 'asian')
-manual_override(df, '@kimberly.loaiza', None, 'hispanic, latino, or spanish origin')
-manual_override(df, '@kristenhancher', None, 'white')
-manual_override(df, '@laurengodwin', None, 'white')
-manual_override(df, '@lizzza', 'Female', 'asian')
-manual_override(df, '@lorengray', None, 'white')
-manual_override(df, '@nishaguragain', None, 'asian')
-manual_override(df, '@oye_indori', None, 'asian')
-manual_override(df, '@piyanka_mongia', None, 'asian')
-manual_override(df, '@sameeksha_sud', None, 'asian')
-manual_override(df, '@savv.labrant', None, 'white')
-manual_override(df, '@selenagomez', 'Female', 'hispanic, latino, or spanish origin')
-manual_override(df, '@stokestwins', 'Male', 'white')
-manual_override(df, '@theshilpashetty', None, 'asian')
-manual_override(df, '@zachking', None, 'asian')
-manual_override(df, '@tonylopez', 'Male', None)
-manual_override(df, '@daviddobrik', None, 'white')
-manual_override(df, '@lilhuddy', 'Male', 'white')
-manual_override(df, '@chrisbrownofficial', 'Male', 'black or african american')
-manual_override(df, '@brunomars', None, 'black or african american')
-manual_override(df, '@xtina', 'Female', 'hispanic, latino, or spanish origin')
-manual_override(df, '@daddyyankee', None, 'hispanic, latino, or spanish origin')
-manual_override(df, '@camilacabello', 'Female', 'hispanic, latino, or spanish origin')
-manual_override(df, '@shakira', None, 'hispanic, latino, or spanish origin')
-manual_override(df, '@tyga', 'Male', 'asian')
-manual_override(df, '@tyrabanks', 'Female', 'black or african american')
-manual_override(df, '@mileycyrus', 'Female', None)
-manual_override(df, '@katyperry', None, 'white')
-manual_override(df, '@dualipaofficial', None, 'white')
-manual_override(df, '@postmalone', None, 'white')
-manual_override(df, '@maroon5', 'Male', 'white')
-manual_override(df, '@halsey', None, 'black or african american')
-manual_override(df, '@mariahcarey', None, 'black or african american')
-manual_override(df, '@dojacat', None, 'black or african american')
-manual_override(df, '@lizzo', 'Female', 'black or african american')
-manual_override(df, '@marshmellomusic', 'Male', 'white')
-manual_override(df, '@21savage', 'Male', 'black or african american')
-manual_override(df, '@alesso', 'Male', 'white')
-manual_override(df, '@anitta', 'Female', 'hispanic, latino, or spanish origin')
-manual_override(df, '@iamcardib', 'Female', 'black or african american')
-manual_override(df, '@jonasbrothers', 'Male', 'white')
-manual_override(df, '@ashleytisdale', 'Female', 'white')
-manual_override(df, '@avamax', 'Female', 'white')
-manual_override(df, '@bazziofficial', 'Male', 'middle eastern or north african')
-manual_override(df, '@brycehall', 'Male', 'white')
-manual_override(df, '@camilo', 'Male', 'hispanic, latino, or spanish origin')
-manual_override(df, '@iambeckyg', 'Female', 'hispanic, latino, or spanish origin')
-manual_override(df, '@kygomusic', 'Male', 'white')
-manual_override(df, '@lauvsongs', 'Male', 'white')
-manual_override(df, '@lilnasx', 'Male', 'black or african american')
-manual_override(df, '@papijuancho', 'Male', 'hispanic, latino, or spanish origin')
-manual_override(df, '@sia', 'Female', 'white')
-manual_override(df, '@panicatthedisco', 'Male', 'white')
-manual_override(df, '@thechainsmokers', 'Male', 'white')
-manual_override(df, '@zoelaverne', 'Female', 'white')
+overrides = [['@therock', 'Male', None],
+    ['@addisonre', 'Female', 'white'],
+    ['@avani', 'Female', 'white'],
+    ['@avneetkaur_13', 'Female', 'asian'],
+    ['@babyariel', None, 'white'],
+    ['@brentrivera', None, 'white'],
+    ['@charlidamelio', 'Female', 'white'],
+    ['@cznburak', None, 'middle eastern or north african'],
+    ['@dixiedamelio', 'Female', 'white'],
+    ['@dobretwins', None, 'white'],
+    ['@gima_ashi', None, 'white'],
+    ['@jacobsartorius', 'Male', 'white'],
+    ['@jasoncoffee', 'Male', None],
+    ['@joealbanese', 'Male', 'white'],
+    ['@justmaiko', 'Male', 'asian'],
+    ['@kimberly.loaiza', None, 'hispanic, latino, or spanish origin'],
+    ['@kristenhancher', None, 'white'],
+    ['@laurengodwin', None, 'white'],
+    ['@lizzza', 'Female', 'asian'],
+    ['@lorengray', None, 'white'],
+    ['@nishaguragain', None, 'asian'],
+    ['@oye_indori', None, 'asian'],
+    ['@piyanka_mongia', None, 'asian'],
+    ['@sameeksha_sud', None, 'asian'],
+    ['@savv.labrant', None, 'white'],
+    ['@selenagomez', 'Female', 'hispanic, latino, or spanish origin'],
+    ['@stokestwins', 'Male', 'white'],
+    ['@theshilpashetty', None, 'asian'],
+    ['@zachking', None, 'asian'],
+    ['@tonylopez', 'Male', None],
+    ['@daviddobrik', None, 'white'],
+    ['@lilhuddy', 'Male', 'white'],
+    ['@chrisbrownofficial', 'Male', 'black or african american'],
+    ['@brunomars', None, 'black or african american'],
+    ['@xtina', 'Female', 'hispanic, latino, or spanish origin'],
+    ['@daddyyankee', None, 'hispanic, latino, or spanish origin'],
+    ['@camilacabello', 'Female', 'hispanic, latino, or spanish origin'],
+    ['@shakira', None, 'hispanic, latino, or spanish origin'],
+    ['@tyga', 'Male', 'asian'],
+    ['@tyrabanks', 'Female', 'black or african american'],
+    ['@mileycyrus', 'Female', None],
+    ['@katyperry', None, 'white'],
+    ['@dualipaofficial', None, 'white'],
+    ['@postmalone', None, 'white'],
+    ['@maroon5', 'Male', 'white'],
+    ['@halsey', None, 'black or african american'],
+    ['@mariahcarey', None, 'black or african american'],
+    ['@dojacat', None, 'black or african american'],
+    ['@lizzo', 'Female', 'black or african american'],
+    ['@marshmellomusic', 'Male', 'white'],
+    ['@21savage', 'Male', 'black or african american'],
+    ['@alesso', 'Male', 'white'],
+    ['@anitta', 'Female', 'hispanic, latino, or spanish origin'],
+    ['@iamcardib', 'Female', 'black or african american'],
+    ['@jonasbrothers', 'Male', 'white'],
+    ['@ashleytisdale', 'Female', 'white'],
+    ['@avamax', 'Female', 'white'],
+    ['@bazziofficial', 'Male', 'middle eastern or north african'],
+    ['@brycehall', 'Male', 'white'],
+    ['@camilo', 'Male', 'hispanic, latino, or spanish origin'],
+    ['@iambeckyg', 'Female', 'hispanic, latino, or spanish origin'],
+    ['@kygomusic', 'Male', 'white'],
+    ['@lauvsongs', 'Male', 'white'],
+    ['@lilnasx', 'Male', 'black or african american'],
+    ['@papijuancho', 'Male', 'hispanic, latino, or spanish origin'],
+    ['@sia', 'Female', 'white'],
+    ['@panicatthedisco', 'Male', 'white'],
+    ['@thechainsmokers', 'Male', 'white'],
+    ['@zoelaverne', 'Female', 'white']]
+for override in overrides:
+    manual_override(df, *override)
 race_table = run_analysis(df)
 
 def representation(df):
@@ -145,7 +147,6 @@ def representation(df):
         source_rep = sum(race_table.loc[race])
         info.append([race, source_rep, source_rep/total, rec_rep, rec_rep / total])
     info_df = pd.DataFrame(info, columns = ['Race', 'Source #', 'Source %', 'Rec #', 'Rec %'])
-    #print(f'Source: {source_rep/total}. Rec: {rec_rep/total}')
     print(info_df)
     con = info_df[['Source #', 'Rec #']]
     print(chi2_contingency(con)[1])
