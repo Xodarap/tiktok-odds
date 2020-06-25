@@ -24,6 +24,8 @@ select source_username, source.gender, source.race,
 """)
 
 res=cur.fetchall()
+conn.close()
+
 df = pd.DataFrame(res, columns = ['source_username', 'source.gender', 'source.race',
     'recommended_username', 'rec.gender', 'rec.race'])
 
@@ -47,7 +49,7 @@ def run_analysis(df):
     black_table = pd.crosstab(race['source.black'], race['rec.black'])
     print(black_table)
     print(chi2_contingency(black_table)[1])
-    return race_table
+    return (gender_table, race_table)
 
 run_analysis(df)
 
@@ -130,7 +132,7 @@ overrides = [['@therock', 'Male', None],
     ['@zoelaverne', 'Female', 'white']]
 for override in overrides:
     manual_override(df, *override)
-race_table = run_analysis(df)
+gender_table, race_table = run_analysis(df)
 
 def representation(df):
     race = df.loc[np.all([df['source.race'] != 'Unknown', df['rec.race'] != 'Unknown'], 0)]
@@ -151,5 +153,9 @@ def representation(df):
     con = info_df[['Source #', 'Rec #']]
     print(chi2_contingency(con)[1])
     return saved
-rep = representation(df)
-conn.close()
+race_representation = representation(df)
+
+gender_table.to_csv('gender.csv')
+race_table.to_csv('race.csv')
+race_representation.to_csv('race_representation.csv')
+df.to_csv('raw_data.csv')
