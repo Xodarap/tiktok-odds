@@ -9,6 +9,7 @@ import psycopg2
 import itertools
 import pandas
 import numpy as np
+import matplotlib.animation as animation
 
 def gini(list_of_values):
     sorted_list = sorted(list_of_values)
@@ -22,24 +23,46 @@ def gini(list_of_values):
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
-def lorenz_curve(X):
+def lorenz_curve(X, annotation = None):
     X = np.array(X, dtype='int64')
     X.sort()
     X_lorenz = X.cumsum() / X.sum()
     X_lorenz = np.insert(X_lorenz, 0, 0) 
-    X_lorenz[0], X_lorenz[-1]
     fig, ax = plt.subplots(figsize=[6,6])
     ## scatter plot of Lorenz curve
-    ax.scatter(np.arange(X_lorenz.size)/(X_lorenz.size-1), X_lorenz, 
-               marker='x', color='darkgreen', s=10)
+    ax.plot(np.arange(X_lorenz.size)/(X_lorenz.size-1) * 100, X_lorenz * 100)
     ## line plot of equality
-    ax.plot([0,1], [0,1], color='k')
-    ax.fill_between(np.arange(X_lorenz.size)/(X_lorenz.size-1), X_lorenz)
+    ax.plot(np.array([0,1]) * 100, [0,100], '--', color='k')
+    ax.fill_between(np.arange(X_lorenz.size)/(X_lorenz.size-1) * 100, X_lorenz * 100)
+    ax.set_ylabel('Cumulative % of followers')
+    ax.set_xlabel('Cumulative % of population')
+    ax.set_ylim(0, 100)
+    ax.set_xlim(0, 100)
+    ax.text(40, 45, 'Line of equality', rotation = 45)
+    ax.set_title('Follower Count Lorenz Curve')
+    if annotation == 'equality':
+        draw_lines(ax, 0.2, 0.2, 0.8, 0.8)
+    if annotation == 'real':
+        p1 = X_lorenz[int(X_lorenz.size * 0.9)]
+        p2 = X_lorenz[int(X_lorenz.size * 0.99)]
+        draw_lines(ax, 0.9, p1, 0.99, p2)
+
+def draw_lines(ax, x1, y1, x2, y2):
+     color = 'red'
+     ax.axvline(x1 * 100, 0, y1, color = color)
+     ax.axhline(y1 * 100, 0, x1, color = color)
+     ax.text(-7, y1 * 100, f'{int(y1*100)}%', color = color)
+     ax.text(x1 * 100 - 2, -7, f'{int(x1*100)}%', color = color)
+     
+     ax.axvline(x2 * 100, 0, y2, color = color)
+     ax.axhline(y2 * 100, 0, x2, color = color)
+     ax.text(-7, y2 * 100, f'{int(y2*100)}%', color = color)
+     ax.text(x2 * 100 -2, -7, f'{int(x2*100)}%', color = color)
 
 def inequality_per_year(year, column):
     cur.execute("""
-                SELECT id, play_count, share_count, comment_count, like_count, create_time
-    	FROM public.tiktok_normalized
+    SELECT id, play_count, share_count, comment_count, like_count, create_time
+    FROM public.tiktok_normalized
     where date_part('year', create_time) = (%s)
     and representative
                 """, [year])
@@ -89,6 +112,23 @@ print(inequality_followers(2020))
 # plt.plot('year', 'plays', data=result_frame)
 # plt.show()
 
-
+# =============================================================================
+# def update_line(num, data, line):
+#     line.set_data(data[..., :num])
+#     return line,
+# fig1 = plt.figure()
+# 
+# # Fixing random state for reproducibility
+# np.random.seed(19680801)
+# 
+# data = np.random.rand(2, 25)
+# l, = plt.plot([], [], 'r-')
+# plt.xlim(0, 1)
+# plt.ylim(0, 1)
+# plt.xlabel('x')
+# plt.title('test')
+# line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
+#                                    interval=50, blit=True)
+# =============================================================================
     
     
