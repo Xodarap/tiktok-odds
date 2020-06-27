@@ -40,6 +40,7 @@ def lorenz_curve(X, annotation = None):
     ax.set_xlim(0, 100)
     ax.text(40, 45, 'Line of equality', rotation = 45)
     ax.set_title('Follower Count Lorenz Curve')
+    print(X_lorenz[int(X_lorenz.size * 0.8)])
     if annotation == 'equality':
         draw_lines(ax, 0.2, 0.2, 0.8, 0.8)
     if annotation == 'real':
