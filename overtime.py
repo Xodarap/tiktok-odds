@@ -39,25 +39,25 @@ cur.execute("""select all_data.id,
             tiktok."time" AS fetch_time,
             tiktok.representative
            FROM tiktok) all_data
-     JOIN ( SELECT (tiktok.json ->> 'id'::text)::bigint AS id,
+     left JOIN ( SELECT (tiktok.json ->> 'id'::text)::bigint AS id,
             max(tiktok."time") AS latest_fetch
            FROM tiktok
           GROUP BY ((tiktok.json ->> 'id'::text)::bigint)) latest ON latest.id = all_data.id 
-		  --AND latest.latest_fetch = all_data.fetch_time
+		  AND latest.latest_fetch = all_data.fetch_time
      LEFT JOIN ( SELECT text_extra.id,
             bool_or(text_extra.hashtag_name <> ''::text) AS any_hashtags,
             bool_or(text_extra.tagged_user IS NOT NULL) AS any_tagged_users,
             bool_or(text_extra.is_commerce) AS is_commerce
            FROM tiktok.text_extra
           GROUP BY text_extra.id) te ON te.id = all_data.id
-		 where all_data.id = 6837152281259969797
-        or all_data.id = 6838386972445248773
+		 where all_data.id = 6844191231224876293
+        or all_data.id = 6843940003219852550
           order by fetch_time asc
 """)
 
 res=cur.fetchall()
 result_df = pd.DataFrame(res, columns = ['ID', 'Views', 'Shares', 'Comments', 'Likes', 'Create Time', 'Fetch Time', 'Elapsed Time'])
-
+result_df['VPL'] = result_df['Views'] / result_df['Likes']
                     
 
 def make_plot(df, ax, x, y, y2):
@@ -72,10 +72,11 @@ def run_subset(df, ident):
     #plt.plot(result_df['Elapsed Time'], result_df['Views'])
     #plt.ylabel('Views')
     #plt.xlabel('Seconds since publication')
-    fig, ax = plt.subplots(1,3, sharey = 'row')
+    fig, ax = plt.subplots(1,4, sharey = 'row')
     make_plot(result_df, ax[0], 'Elapsed Time', 'Views', 'Likes')
     make_plot(result_df, ax[1], 'Elapsed Time', 'Views', 'Shares')
     make_plot(result_df, ax[2], 'Elapsed Time', 'Views', 'Comments')
+    make_plot(result_df, ax[3], 'Elapsed Time', 'Views', 'VPL')
     plt.tight_layout()
     ax[0].set_ylabel('Views')
     ax[1].set_xlabel('Minutes since publication')
@@ -88,8 +89,8 @@ result_df['Time in Seconds'] = [t.timestamp() for t in result_df['Fetch Time']]
 ids = np.unique(result_df['ID'])
 one = result_df[result_df['ID'] == ids[0]]
 two = result_df[result_df['ID'] == ids[1]]
-l1, = ax.plot(one['Time in Seconds'], one['Views'], label = 'Video 1')
-l2, = ax.plot(two['Time in Seconds'], two['Views'], label = 'Video 2')
+l1, = ax.plot(one['Elapsed Time'], one['Views'], label = 'Video 1')
+l2, = ax.plot(two['Elapsed Time'], two['Views'], label = 'Video 2')
 ax.set_ylabel('Views')
-ax.set_xlabel('Seconds since publication')
+ax.set_xlabel('Minutes since publication')
 ax.legend(handles = [l1, l2])
