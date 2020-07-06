@@ -32,7 +32,7 @@ df['First'] = [r[2] for r in res]
 df['Likes'] = [r[3] for r in res]
 
 first_views = df[df['First'] == 1]['Views']
-later_views = df[df['First'] == 2]['Views']
+later_views = df[df['First'] == 15]['Views']
 n_bins=200
 plt.hist(first_views, n_bins, facecolor='blue', alpha=0.5,density=True, label = 'First videos')
 plt.hist(later_views, n_bins, facecolor='red', alpha=0.5,density=True, label = 'Second videos')

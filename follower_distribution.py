@@ -34,3 +34,5 @@ plt.hist(df['Log Followers'], density = True, bins = 20)
 sorted_values = df['Followers'].sort_values(ignore_index = True)
 entries_per_percentile = int(len(sorted_values)/100)
 percentiles = [(percentile, sorted_values[percentile * entries_per_percentile]) for percentile in range(1,100)]
+for p in percentiles:
+    print(f'[{p[0]}, {p[1]}],')

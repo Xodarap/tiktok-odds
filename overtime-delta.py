@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+t# -*- coding: utf-8 -*-
 """
 Created on Tue Jun 30 18:09:56 2020
 
@@ -21,7 +21,7 @@ conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
 cur.execute("""
-            --REFRESH MATERIALIZED VIEW tiktok.videos_all_materialized;
+            REFRESH MATERIALIZED VIEW tiktok.videos_all_materialized;
             select id, pps, ppl, ppe, play_count_2, elapsed_seconds_2,
             like_count_2
             from tiktok.videos_delta

@@ -2490,7 +2490,7 @@ for i in range(0,6000):
     for name in names:
         print(name)
         try:
-            tiktoks = api.byUsername(name, count=3)
+            tiktoks = api.byUsername(name, count=15)
         except Exception as e:
             print(e)
             continue
@@ -2502,7 +2502,7 @@ for i in range(0,6000):
             cur.execute('INSERT INTO tiktok (time,json) VALUES (%s,%s)', (t_time,new_t))
             #outfile.write('%s\t%s\t%s\n' % (t['id'],t_time,t))
         conn.commit()
-        time.sleep(600 + randint(5, 15))
+        time.sleep(3600 + randint(5, 15))
         #time.sleep(randint(5, 15))
 cur.close()
 conn.close()
