@@ -14,27 +14,6 @@ import datetime
 import time
 import json
 
-
-def load(username):
-    api = TikTokApi()
-    print(f'Fetching {username}')
-    try:
-        tiktoks = api.byUsername(username, count=50)
-    except Exception as e:
-        print(e)
-    t_time=str(datetime.datetime.now())
-    print(len(tiktoks))
-    print(t_time)
-    for t in tiktoks:
-        new_t=json.dumps(t)
-        cur.execute('INSERT INTO tiktok (time,json) VALUES (%s,%s)', (t_time,new_t))
-    conn.commit()
-    print('Saved')
-    cur.execute('refresh materialized view tiktok.videos_all_materialized')
-    cur.execute('refresh materialized view tiktok.videos_materialized')
-    conn.commit()
-    print('Views Refreshed')
-
 def histogram(df):
     plt.hist(np.log10(df['play_count']), density = True)
     plt.title('Play count distribution')
@@ -58,10 +37,10 @@ def most_recent(username):
     cur.execute('''
                 select *,
                 (fetch_time - create_time) as "Elapsed Time"
-                 from tiktok.videos_all_materialized m
+                 from tiktok.videos_normalized_all m
                 where id = (
                     select id 
-                    from tiktok.videos_all_materialized
+                    from tiktok.videos_normalized_all
                     where author = (%s)
                     order by create_time desc
                     limit 1
@@ -95,7 +74,7 @@ def print_extra_stats(username):
                 sum(case when hashtag_name is not null then 1 else 0 end) tags,
                 sum(case when tagged_user is not null then 1 else 0 end) users,
                 max(fetch_time - create_time) as "Elapsed Time"
-                 from tiktok.videos_all_materialized m
+                 from tiktok.videos_normalized_all m
                  left join tiktok.text_extra using (id)
                  where author = (%s)
                  group by id
@@ -112,7 +91,6 @@ def print_extra_stats(username):
 # =============================================================================
 
 username ='mathematicanese' 
-load_only = True
 
 # =============================================================================
 # 
@@ -122,26 +100,23 @@ load_only = True
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
-if load_only:
-    load(username)
-else:
-    cur.execute('''SELECT *
-    from tiktok.videos_materialized
-    where author = (%s)''', [username])
-    res=cur.fetchall()
-    colnames = [desc[0] for desc in cur.description]
-    df = pd.DataFrame(res, columns = colnames)
-    df['VPL'] = df['play_count'] / df['like_count']
-    df['Engagements'] = np.sum(df[['like_count', 'share_count', 'comment_count']],
-                               axis = 1)
-    df['VPE'] = df['play_count'] / df['Engagements']
-    
-    histogram(df)
-    plt.figure()
-    view_like(df)
-    most_recent(username)
-    print_stats(df)
-    print_extra_stats(username)
+cur.execute('''SELECT *
+from tiktok.videos_normalized
+where author = (%s)''', [username])
+res=cur.fetchall()
+colnames = [desc[0] for desc in cur.description]
+df = pd.DataFrame(res, columns = colnames)
+df['VPL'] = df['play_count'] / df['like_count']
+df['Engagements'] = np.sum(df[['like_count', 'share_count', 'comment_count']],
+                           axis = 1)
+df['VPE'] = df['play_count'] / df['Engagements']
+
+histogram(df)
+plt.figure()
+view_like(df)
+most_recent(username)
+print_stats(df)
+print_extra_stats(username)
 
 cur.close()
 conn.close()
