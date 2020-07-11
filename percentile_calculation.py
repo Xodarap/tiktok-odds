@@ -49,9 +49,17 @@ for row in all_results:
     count += 1
     if count > 1000:
         break
-
-plt.hist(all_evs, 100, facecolor='blue', alpha=0.5,density=True)
-all_evs.sort()
-entries_per_percentile = int(len(all_evs)/100)
-percentiles = [(percentile, all_evs[percentile * entries_per_percentile]) for percentile in range(1,100)]
 cur.close()
+conn.close()
+
+def get_percentiles(all_evs):
+    plt.hist(all_evs, 100, facecolor='blue', alpha=0.5,density=True)
+    all_evs.sort()
+    entries_per_percentile = int(len(all_evs)/100)
+    percentiles = [(percentile, all_evs[percentile * entries_per_percentile]) for percentile in range(1,100)]
+    return percentiles
+
+all_percentiles = []
+for idx in range(0, 5):
+    sampled = np.random.choice(all_evs, size = int(len(all_evs)/5))
+    all_percentiles.append(get_percentiles(sampled))
