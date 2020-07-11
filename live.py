@@ -17,6 +17,7 @@ import json
 
 def load(username):
     api = TikTokApi()
+    print(f'Fetching {username}')
     try:
         tiktoks = api.byUsername(username, count=50)
     except Exception as e:
