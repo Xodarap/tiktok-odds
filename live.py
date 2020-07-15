@@ -13,18 +13,28 @@ from TikTokApi import TikTokApi
 import datetime
 import time
 import json
+import os
 
-def histogram(df):
+def histogram(df, username):
     plt.hist(np.log10(df['play_count']), density = True)
-    plt.title('Play count distribution')
+    plt.title(f'{username} play count distribution')
     plt.xlabel('log10(views)')
     plt.ylabel('Density')
+    plt.savefig(f'D:/Documents/tiktok-live-graphs/{username}_histogram.png')
 
-def view_like(df):
+def view_like(df, vpl, username):
     plt.scatter(np.log10(df['play_count']), np.log10(df['like_count']))
-    plt.title('Plays vs. likes')
+    xlim = plt.xlim()
+    x = np.linspace(xlim[0], xlim[1], 100)
+    plt.plot(x, np.log10(1 / (vpl / np.power(10, x))), color = 'r', 
+             label = 'Your Average')
+    plt.plot(x, np.log10(1 / (4.556428 / np.power(10, x))), color = 'k', 
+             label = '2020 Global Average')
+    plt.title(f'{username} plays vs. likes')
     plt.xlabel('log10(Plays)')
     plt.ylabel('log10(Likes)')
+    plt.legend()
+    plt.savefig(f'D:/Documents/tiktok-live-graphs/{username}_view_like.png')
 
 def make_overtime_plot(df, ax, x, y, y2):
     l1, = ax.plot(df[x], df[y], 'b-', label = y)
@@ -67,6 +77,7 @@ def print_stats(df):
     print(f"Average Engagements: {np.mean(df['Engagements'])}")
     print(f"Average VPE: {np.mean(df['VPE'])}")
     print(f"Use hashtags: {np.mean(df['any_hashtags'])}")
+    return np.mean(df['VPL'])
 
 def print_extra_stats(username):
     cur.execute('''
@@ -90,7 +101,7 @@ def print_extra_stats(username):
 # 
 # =============================================================================
 
-username ='mathematicanese' 
+username = os.environ.get('USER')
 
 # =============================================================================
 # 
@@ -100,23 +111,53 @@ username ='mathematicanese'
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
-cur.execute('''SELECT *
-from tiktok.videos_normalized
-where author = (%s)''', [username])
-res=cur.fetchall()
-colnames = [desc[0] for desc in cur.description]
-df = pd.DataFrame(res, columns = colnames)
-df['VPL'] = df['play_count'] / df['like_count']
-df['Engagements'] = np.sum(df[['like_count', 'share_count', 'comment_count']],
-                           axis = 1)
-df['VPE'] = df['play_count'] / df['Engagements']
 
-histogram(df)
-plt.figure()
-view_like(df)
-most_recent(username)
-print_stats(df)
-print_extra_stats(username)
+def load(username, disp = False):
+    api = TikTokApi()
+    if disp:
+        print(f'Fetching {username}')
+    try:
+        tiktoks = api.byUsername(username, count=50)
+    except Exception as e:
+        print(e)
+    t_time=str(datetime.datetime.now())
+    if disp:
+        print(len(tiktoks))
+    for t in tiktoks:
+        new_t=json.dumps(t)
+        cur.execute('INSERT INTO tiktok (time,json) VALUES (%s,%s)', (t_time,new_t))
+    conn.commit()
+    if disp:
+        print('Saved')
+
+def run_user(username):
+    print(f'========== {username} =========')
+    #load(username)
+    cur.execute('''SELECT *
+    from tiktok.videos_normalized
+    where author = (%s)''', [username])
+    res=cur.fetchall()
+    colnames = [desc[0] for desc in cur.description]
+    df = pd.DataFrame(res, columns = colnames)
+    df['VPL'] = df['play_count'] / df['like_count']
+    df['Engagements'] = np.sum(df[['like_count', 'share_count', 'comment_count']],
+                               axis = 1)
+    df['VPE'] = df['play_count'] / df['Engagements']
+    
+    histogram(df, username)
+    plt.figure()
+    vpl = print_stats(df)
+    view_like(df, vpl, username)
+    #most_recent(username)
+    print_extra_stats(username)
+
+names = ['wavimusic']
+for name in names:
+    load(name, True)
+    run_user(name)
+    plt.figure()
 
 cur.close()
 conn.close()
+
+#plt.show()

@@ -39,19 +39,16 @@ cur.execute("""select all_data.id,
             tiktok."time" AS fetch_time,
             tiktok.representative
            FROM tiktok) all_data
-     left JOIN ( SELECT (tiktok.json ->> 'id'::text)::bigint AS id,
-            max(tiktok."time") AS latest_fetch
-           FROM tiktok
-          GROUP BY ((tiktok.json ->> 'id'::text)::bigint)) latest ON latest.id = all_data.id 
-		  AND latest.latest_fetch = all_data.fetch_time
-     LEFT JOIN ( SELECT text_extra.id,
-            bool_or(text_extra.hashtag_name <> ''::text) AS any_hashtags,
-            bool_or(text_extra.tagged_user IS NOT NULL) AS any_tagged_users,
-            bool_or(text_extra.is_commerce) AS is_commerce
-           FROM tiktok.text_extra
-          GROUP BY text_extra.id) te ON te.id = all_data.id
-		 where all_data.id = 6844191231224876293
-        or all_data.id = 6843940003219852550
+		 where all_data.id in ( --6848018597407771909
+         select id from (
+             select distinct (tiktok.json ->> 'id'::text)::bigint AS id,
+             to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision)
+             from tiktok
+             where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
+             order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
+             limit 2
+             ) q
+         )
           order by fetch_time asc
 """)
 
@@ -72,7 +69,7 @@ def run_subset(df, ident):
     #plt.plot(result_df['Elapsed Time'], result_df['Views'])
     #plt.ylabel('Views')
     #plt.xlabel('Seconds since publication')
-    fig, ax = plt.subplots(1,4, sharey = 'row')
+    fig, ax = plt.subplots(1,4, sharey = 'row', figsize = (13, 8))
     make_plot(result_df, ax[0], 'Elapsed Time', 'Views', 'Likes')
     make_plot(result_df, ax[1], 'Elapsed Time', 'Views', 'Shares')
     make_plot(result_df, ax[2], 'Elapsed Time', 'Views', 'Comments')
@@ -84,7 +81,7 @@ def run_subset(df, ident):
 for ident in np.unique(result_df['ID']):
     run_subset(result_df, ident)
 
-fig, ax = plt.subplots(1,1)
+fig, ax = plt.subplots(1,1, figsize = (13, 8))
 result_df['Time in Seconds'] = [t.timestamp() for t in result_df['Fetch Time']]
 ids = np.unique(result_df['ID'])
 one = result_df[result_df['ID'] == ids[0]]
