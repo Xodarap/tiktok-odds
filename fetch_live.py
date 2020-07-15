@@ -38,11 +38,12 @@ def refresh_views():
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
-usernames = ['billnye', 'benthamite', 'amarchenkova']
+usernames = ['stilesportrait', 'realtechonomics', 'wavimusic', 'docdor']
 for username in usernames:
-    load(username)
+    pass
+    #load(username)
 
-#refresh_views()
+refresh_views()
 
 cur.close()
 conn.close()
