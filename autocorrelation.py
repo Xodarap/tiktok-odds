@@ -39,6 +39,7 @@ cur.execute("""
             having count(1) > 20)
             and d1.id in (6838386972445248773, 6844191231224876293)
             and d1.d_seconds < 800
+            and d1.elapsed_seconds_2 < 30000
             order by d1.id, d1.elapsed_seconds_2 asc
 """)
 
@@ -100,14 +101,19 @@ def simple(df, ax, reg = None):
         reg = LassoCV(cv=5, random_state=0, 
               alphas=[1e-3, 1e-2, 1e-1, 1, 5, 10, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8]).fit(X, y)
     
-    results = pd.DataFrame([[*reg.coef_, reg.intercept_, reg.alpha_, r2_score(reg.predict(X), y)]],
-                           columns = independent_variables +
-                                          ['Intercept', 'Alpha', 'R^2'])
-    print(results)
+        results = pd.DataFrame([[*reg.coef_, reg.intercept_, reg.alpha_, r2_score(reg.predict(X), y)]],
+                               columns = independent_variables +
+                                              ['Intercept', 'Alpha', 'R^2'])
+        print(results)
     def total_views(pps, df):
         return pps * [d.total_seconds() for d in df['d_time']]
-    ax.plot(df['elapsed_seconds_2'] / 60, np.cumsum(total_views(y, df)), label = 'actual')
+    df['prev_d_plays'] = df['d_play'].shift(1)    
+    df['extrap_plays'] = np.cumsum(total_views(y, df))
+    df['prev_extrap_plays'] = df['extrap_plays'].shift(1)  
+    df['naive_estimate'] = df['prev_extrap_plays'] + df['prev_d_plays']
+    ax.plot(df['elapsed_seconds_2'] / 60, df['extrap_plays'], label = 'actual')
     ax.plot(df['elapsed_seconds_2'] / 60, np.cumsum(total_views(reg.predict(X), df)), label = 'predicted')
+    # ax.plot(df['elapsed_seconds_2'] / 60, df['naive_estimate'], label = 'naive estimate')
     ax.set_ylabel('Views')
     ax.legend()
     return reg
@@ -120,3 +126,4 @@ fig, ax = plt.subplots(2,1)
 reg = simple(df1, ax[0])
 simple(df2, ax[1], reg)
 ax[1].set_xlabel('Minutes since posting')
+

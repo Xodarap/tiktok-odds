@@ -20,21 +20,31 @@ def histogram(df, username):
     plt.title(f'{username} play count distribution')
     plt.xlabel('log10(views)')
     plt.ylabel('Density')
-    plt.savefig(f'D:/Documents/tiktok-live-graphs/{username}_histogram.png')
+    plt.savefig(f'D:/Documents/tiktok-live-graphs/stream 2/{username}_histogram.png')
 
 def view_like(df, vpl, username):
-    plt.scatter(np.log10(df['play_count']), np.log10(df['like_count']))
+    # plt.scatter(np.log10(df['play_count']), np.log10(df['like_count']))
+    # xlim = plt.xlim()
+    # x = np.linspace(np.power(10, xlim[0]), np.power(10, xlim[1]), 100)
+    # plt.plot(x, np.log10(1 / (vpl / np.power(10, x))), color = 'r', 
+    #          label = 'Your Average')
+    # plt.plot(x, np.log10(1 / (4.556428 / np.power(10, x))), color = 'k', 
+    #          label = '2020 Global Average')
+    plt.scatter(df['play_count'], (df['like_count']))
     xlim = plt.xlim()
-    x = np.linspace(xlim[0], xlim[1], 100)
-    plt.plot(x, np.log10(1 / (vpl / np.power(10, x))), color = 'r', 
-             label = 'Your Average')
-    plt.plot(x, np.log10(1 / (4.556428 / np.power(10, x))), color = 'k', 
-             label = '2020 Global Average')
+    x = np.linspace(xlim[0], xlim[1], 10)
+    plt.plot(x, x / vpl, color = 'r', 
+              label = 'Your Average')    
+    y = x/4.556428
+    plt.plot(x, y, color = 'k', 
+              label = '2020 Global Average')
+    plt.yscale('log', basey = 10)
+    plt.xscale('log', basex = 10)
     plt.title(f'{username} plays vs. likes')
     plt.xlabel('log10(Plays)')
     plt.ylabel('log10(Likes)')
     plt.legend()
-    plt.savefig(f'D:/Documents/tiktok-live-graphs/{username}_view_like.png')
+    plt.savefig(f'D:/Documents/tiktok-live-graphs/stream 2/{username}_view_like.png')
 
 def make_overtime_plot(df, ax, x, y, y2):
     l1, = ax.plot(df[x], df[y], 'b-', label = y)
@@ -151,13 +161,15 @@ def run_user(username):
     #most_recent(username)
     print_extra_stats(username)
 
-names = ['wavimusic']
+
+# names = ['hunk.of.junk', 'nemobright', 'sallyisadog']
+names = [username]
 for name in names:
     load(name, True)
     run_user(name)
-    plt.figure()
+    # plt.figure()
 
 cur.close()
 conn.close()
 
-#plt.show()
+plt.show()

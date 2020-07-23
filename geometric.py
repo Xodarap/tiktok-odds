@@ -74,7 +74,8 @@ def loss(a1, b1, a2, b2, v0, samples = 50000, ta_func = create_ta_one):
 
 def plot_histogram(ax, values1, edges1, values2, edges2):
     ysmoothed = gaussian_filter1d(values1, sigma=0.5)
-    ax.plot(edges1[:len(edges1)-1], ysmoothed, label = 'predicted', color = 'orange')
+    ax.plot(edges1[:len(edges1)-1], ysmoothed, label = 'predicted', color = 'orange',
+            linewidth = 5)
     ax.bar(edges2[:len(edges2)-1], values2, label = 'actual', alpha = 0.7,
            width = edges2[1] - edges2[0])
     ax.set_xlabel('Log_10(Views)')
@@ -88,7 +89,8 @@ def plot_density(ax, a1, b1, a2, b2, v0, samples = 50000, ta_func = create_ta_on
     ax.set_xlabel('Target view ratio / actual view ratio')
     ax.set_ylabel('Density')
 
-fig, ax = plt.subplots(2, 1)
+fig, ax = plt.subplots(1, 1)
+ax = [ax]
 #res = create_histograms(5,2,60,4)
 #plot_histogram(ax[0], * res)
 calculate = False
@@ -114,11 +116,11 @@ else:
     #params = np.array([ 4.21872583,  2.21108072, 62.79339527,  3.00505674, 4])
 
 plot_histogram(ax[0], *create_histograms(*params, samples = 50000, ta_func = ta_func))
-plot_density(ax[1], *params, ta_func = ta_func)
+# plot_density(ax[1], *params, ta_func = ta_func)
 x = np.linspace(0, 1, 100)
-ax[1].plot(x, beta.pdf(x, params[0], params[1]), label = 'Target')
-ax[1].plot(x, beta.pdf(x, params[2], params[3]), label = 'Actual')
-plt.legend()
+# ax[1].plot(x, beta.pdf(x, params[0], params[1]), label = 'Target')
+# ax[1].plot(x, beta.pdf(x, params[2], params[3]), label = 'Actual')
+# plt.legend()
 
 def expected_per_p(p, a1, b1, a2, b2):
     ta = create_ta_two(a1, b1, a2, b2, samples = 100000, p = p)
@@ -128,8 +130,8 @@ def expected_per_p(p, a1, b1, a2, b2):
 plt.figure()
 expected = [expected_per_p(p, *params[:-1]) for p in x]
 plt.plot(x, expected)
-plt.xlabel('Relative Quality')
-plt.ylabel('Relative Performance')
+plt.xlabel('Relative VPL')
+plt.ylabel('Relative View Count')
 
 worse = len(list(filter(lambda v: v < 1, expected)))
 plt.plot([0, worse/100], [1, 1], color = 'k')
