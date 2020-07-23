@@ -39,8 +39,12 @@ cur.execute("""select all_data.id,
             tiktok."time" AS fetch_time,
             tiktok.representative
            FROM tiktok) all_data
-		 where all_data.id in ( --6848018597407771909
-         select id from (
+		 where all_data.id in ( --6852376935411010822, -- posting frequency
+         6851335018715811078 -- vpl
+         --6838386972445248773 -- most popular (beautiful)
+         --6845799211468918021 -- R
+         )
+         /*select id from (
              select distinct (tiktok.json ->> 'id'::text)::bigint AS id,
              to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision)
              from tiktok
@@ -48,14 +52,37 @@ cur.execute("""select all_data.id,
              order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
              limit 2
              ) q
-         )
+         ) */
+          union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
           order by fetch_time asc
 """)
 
 res=cur.fetchall()
-result_df = pd.DataFrame(res, columns = ['ID', 'Views', 'Shares', 'Comments', 'Likes', 'Create Time', 'Fetch Time', 'Elapsed Time'])
+result_df = pd.DataFrame(res, columns = ['ID', 'Views', 'Shares', 'Comments', 
+                                         'Likes', 'Create Time', 'Fetch Time', 
+                                         'Elapsed Time'])
+# result_df = pd.concat([pd.DataFrame([[]], columns = ['ID', 'Views', 'Shares', 'Comments', 
+#                                          'Likes', 'Create Time', 'Fetch Time', 
+#                                          'Elapsed Time']), result_df])
 result_df['VPL'] = result_df['Views'] / result_df['Likes']
-                    
+
+
+# plt.plot(result_df['VPL'], result_df['inferred_vpl'])                    
+def interpolate_zeros(vals):
+    out = vals.copy().reindex(range(0, len(vals)))
+    start_idx = None
+    def interpolate(vals, start, end):
+        buckets = (end+1)-start
+        amount = vals[end]
+        vals[start:(end + 1)] = amount / buckets
+    for idx in range(0, len(vals)):
+        if start_idx is not None:
+            if out[idx] > 0:
+                interpolate(out, start_idx, idx)
+                start_idx = None
+        elif out[idx] == 0:
+            start_idx = idx
+    return out
 
 def make_plot(df, ax, x, y, y2):
     l1, = ax.plot(df[x], df[y], 'b-', label = y)
@@ -65,17 +92,26 @@ def make_plot(df, ax, x, y, y2):
     ax.legend(handles = [l1, l2])
 
 def run_subset(df, ident):
-    result_df = df[df['ID'] == ident]
+    result_df = df[df['ID'] == ident]    
+    result_df['Views_1'] = result_df['Views'].shift(1)
+    result_df['Likes_1'] = result_df['Likes'].shift(1)
+    result_df['d_v'] = (result_df['Views'] - result_df['Views_1']).rolling(window = 3).mean()
+    result_df['d_v'] = interpolate_zeros(result_df['d_v'])
+    result_df['d_l'] = (result_df['Likes'] - result_df['Likes_1']).rolling(window = 3).mean()
+    result_df['d_l_1'] = result_df['d_l'].shift(1)
+    result_df['d_vpl'] = (result_df['d_v']) / (result_df['d_l_1'])
+    result_df['d_vpl_rolling'] = result_df['d_vpl']
+    result_df['inferred_vpl'] = np.cumsum(result_df['d_v']) / np.cumsum(result_df['d_l'])
     #plt.plot(result_df['Elapsed Time'], result_df['Views'])
     #plt.ylabel('Views')
     #plt.xlabel('Seconds since publication')
-    fig, ax = plt.subplots(1,4, sharey = 'row', figsize = (13, 8))
-    make_plot(result_df, ax[0], 'Elapsed Time', 'Views', 'Likes')
-    make_plot(result_df, ax[1], 'Elapsed Time', 'Views', 'Shares')
-    make_plot(result_df, ax[2], 'Elapsed Time', 'Views', 'Comments')
-    make_plot(result_df, ax[3], 'Elapsed Time', 'Views', 'VPL')
+    fig, ax = plt.subplots(1,4, figsize = (13, 8))
+    make_plot(result_df, ax[0], 'Elapsed Time', 'Views', 'VPL')
+    make_plot(result_df, ax[1], 'Elapsed Time', 'Views', 'd_v')
+    make_plot(result_df, ax[2], 'Elapsed Time', 'Views', 'd_l')
+    make_plot(result_df, ax[3], 'Elapsed Time', 'Views', 'd_vpl_rolling')
     plt.tight_layout()
-    ax[0].set_ylabel('Views')
+    ax[0].set_ylabel('Views') 
     ax[1].set_xlabel('Minutes since publication')
 
 for ident in np.unique(result_df['ID']):
