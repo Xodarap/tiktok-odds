@@ -15,12 +15,14 @@ import time
 import json
 import os
 
+folder = 'stream_3'
+
 def histogram(df, username):
     plt.hist(np.log10(df['play_count']), density = True)
     plt.title(f'{username} play count distribution')
     plt.xlabel('log10(views)')
     plt.ylabel('Density')
-    plt.savefig(f'D:/Documents/tiktok-live-graphs/stream 2/{username}_histogram.png')
+    plt.savefig(f'D:/Documents/tiktok-live-graphs/{folder}/{username}_histogram.png')
 
 def view_like(df, vpl, username):
     # plt.scatter(np.log10(df['play_count']), np.log10(df['like_count']))
@@ -44,7 +46,7 @@ def view_like(df, vpl, username):
     plt.xlabel('log10(Plays)')
     plt.ylabel('log10(Likes)')
     plt.legend()
-    plt.savefig(f'D:/Documents/tiktok-live-graphs/stream 2/{username}_view_like.png')
+    plt.savefig(f'D:/Documents/tiktok-live-graphs/{folder}/{username}_view_like.png')
 
 def make_overtime_plot(df, ax, x, y, y2):
     l1, = ax.plot(df[x], df[y], 'b-', label = y)
@@ -105,6 +107,42 @@ def print_extra_stats(username):
     print(f"Average hashtags: {np.mean(df['tags'])}")
     print(f"Average tagged users: {np.mean(df['users'])}")
 
+def print_tag_stats(username):
+    cur.execute('''
+            select hashtag_name, count(1)
+             from tiktok.videos_normalized_all m
+             left join tiktok.text_extra using (id)
+             where author = (%s)
+             group by hashtag_name
+             order by count(1) desc 
+             limit 10
+            ''', [username])        
+    df = pd.DataFrame(cur.fetchall(), 
+                               columns = [desc[0] for desc in cur.description])   
+    print('Ten most used tags:')
+    print(df)
+    cur.execute('''
+        select hashtag_name, count(1)
+         from tiktok.videos_normalized_all m
+         left join tiktok.text_extra using (id)
+         where author = (%s)
+         and hashtag_name in (
+             'fyp',
+             'foryoupage',
+             'xyzabc',
+             'xyzbca',
+             'viral',
+             'foryou'
+         )
+         group by hashtag_name
+         order by count(1) desc 
+         limit 10
+        ''', [username])        
+    df = pd.DataFrame(cur.fetchall(), 
+                               columns = [desc[0] for desc in cur.description])
+    print('Any FYP tags:')
+    print(df)
+
 # =============================================================================
 # 
 # Configuration section
@@ -160,12 +198,12 @@ def run_user(username):
     view_like(df, vpl, username)
     #most_recent(username)
     print_extra_stats(username)
+    print_tag_stats(username)
 
 
-# names = ['hunk.of.junk', 'nemobright', 'sallyisadog']
 names = [username]
 for name in names:
-    load(name, True)
+    # load(name, True)
     run_user(name)
     # plt.figure()
 
