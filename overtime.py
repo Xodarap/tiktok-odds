@@ -18,6 +18,17 @@ from collections.abc import Iterable
 from scipy.stats import wilcoxon
 
 
+id_map = {6852376935411010822: 'posting frequency',
+         6851335018715811078: 'vpl',
+         6838386972445248773: 'most popular (beautiful)',
+         6845799211468918021: 'R',
+         6855359832392731909: 'sound delay',
+         6855018062626753798: 'spaghetti code',
+         6854631030050000133: 'unschooling',
+         6853576412276788486: 'bruh girls',
+         6854222855345835270: 'tabs vs spaces'
+         }
+
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
@@ -39,21 +50,25 @@ cur.execute("""select all_data.id,
             tiktok."time" AS fetch_time,
             tiktok.representative
            FROM tiktok) all_data
-		 where all_data.id in ( --6852376935411010822, -- posting frequency
-         6851335018715811078 -- vpl
-         --6838386972445248773 -- most popular (beautiful)
-         --6845799211468918021 -- R
-         )
-         /*select id from (
-             select distinct (tiktok.json ->> 'id'::text)::bigint AS id,
-             to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision)
-             from tiktok
-             where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
-             order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
-             limit 2
+		 where all_data.id in ( 
+             --6852376935411010822, -- posting frequency
+             --6851335018715811078 -- vpl
+             --6838386972445248773 -- most popular (beautiful)
+             --6845799211468918021 -- R
+             --)
+             --select 6853576412276788486
+             --union all select 6838386972445248773
+             --union all
+             select id from (
+                 select distinct (tiktok.json ->> 'id'::text)::bigint AS id,
+                 to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision)
+                 from tiktok
+                 where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
+                 order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
+                 limit 4
              ) q
-         ) */
-          union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
+         ) 
+          --union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
           order by fetch_time asc
 """)
 
@@ -115,15 +130,18 @@ def run_subset(df, ident):
     ax[1].set_xlabel('Minutes since publication')
 
 for ident in np.unique(result_df['ID']):
-    run_subset(result_df, ident)
+    # run_subset(result_df, ident)
+    pass
 
 fig, ax = plt.subplots(1,1, figsize = (13, 8))
 result_df['Time in Seconds'] = [t.timestamp() for t in result_df['Fetch Time']]
 ids = np.unique(result_df['ID'])
-one = result_df[result_df['ID'] == ids[0]]
-two = result_df[result_df['ID'] == ids[1]]
-l1, = ax.plot(one['Elapsed Time'], one['Views'], label = 'Video 1')
-l2, = ax.plot(two['Elapsed Time'], two['Views'], label = 'Video 2')
+def plot_id(ids):
+    one = result_df[result_df['ID'] == ids]
+    ax.plot(one['Elapsed Time'], one['Views'],
+                  label = id_map[ids])
+for idx in ids:
+    plot_id(idx)
 ax.set_ylabel('Views')
 ax.set_xlabel('Minutes since publication')
-ax.legend(handles = [l1, l2])
+ax.legend()

@@ -192,7 +192,10 @@ def run_user(username):
                                axis = 1)
     df['VPE'] = df['play_count'] / df['Engagements']
     
-    histogram(df, username)
+    try:
+        histogram(df, username)
+    except:
+        print('oops')
     plt.figure()
     vpl = print_stats(df)
     view_like(df, vpl, username)
@@ -203,7 +206,7 @@ def run_user(username):
 
 names = [username]
 for name in names:
-    # load(name, True)
+    load(name, True)
     run_user(name)
     # plt.figure()
 
