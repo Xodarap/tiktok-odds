@@ -32,62 +32,51 @@ id_map = {6852376935411010822: 'posting frequency',
          6856080442144099590: 'duration',
          6856426933966621958: 'valgrind',
          6856492989137603846: 'gpt3 mean girls',
-         6856842489123409157: 'p value',
-         6857171668180143365: 'gpt3 algorithm advice'
+         6856842489123409157: 'p value'
          }
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
 cur = conn.cursor()
 
-cur.execute("""select all_data.id,
-    all_data.play_count,
-    all_data.share_count,
-    all_data.comment_count,
-    all_data.like_count,
-    all_data.create_time,
-    all_data.fetch_time,
-    extract(epoch from (all_data.fetch_time - all_data.create_time)) / 60
-   FROM ( SELECT (tiktok.json ->> 'id'::text)::bigint AS id,
-            (tiktok.json -> 'author'::text) ->> 'uniqueId'::text AS author,
-            ((tiktok.json -> 'stats'::text) -> 'playCount'::text)::integer AS play_count,
-            ((tiktok.json -> 'stats'::text) -> 'shareCount'::text)::integer AS share_count,
-            ((tiktok.json -> 'stats'::text) -> 'commentCount'::text)::integer AS comment_count,
-            ((tiktok.json -> 'stats'::text) -> 'diggCount'::text)::integer AS like_count,
-            to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) AS create_time,
-            tiktok."time" AS fetch_time,
-            tiktok.representative
-           FROM tiktok) all_data
-		 where all_data.id in ( 
-             --6852376935411010822, -- posting frequency
-             --6851335018715811078 -- vpl
-             --6838386972445248773 -- most popular (beautiful)
-             --6845799211468918021 -- R
-             --)
-             --select 6853576412276788486
-             --union all 
-             --select 6838386972445248773
-             --union all
-             select id from (
-                 select distinct (tiktok.json ->> 'id'::text)::bigint AS id,
-                 to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision)
-                 from tiktok
-                 where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
-                 order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
-                 limit 6
-             ) q
-         ) 
-          --union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
-          order by fetch_time asc
+cur.execute("""            
+select id,
+play_count,
+share_count,
+like_count,
+extract(epoch from (fetch_time - create_time)) / 60 elapsed_time,
+fetch_time
+from videos_normalized_all
+where author = 'benthamite'
+and id in (
+    select distinct id 
+    from videos_normalized_all
+    where extract(epoch from (fetch_time - create_time)) / 60 > 1440
+)
+and id in (
+    select distinct id 
+    from videos_normalized_all
+    where extract(epoch from (fetch_time - create_time)) / 60 < 1440
+    group by id
+    having count(1) > 20
+    limit 10
+)
+and id in (
+    select distinct id 
+    from videos_normalized_all
+    where extract(epoch from (fetch_time - create_time)) / 60 < 60
+)
+and id in (
+    select distinct id 
+    from videos_normalized_all
+    where extract(epoch from (fetch_time - create_time)) / 60 > 1300
+)
+and extract(epoch from (fetch_time - create_time)) / 60 < 1440
+order by fetch_time asc
 """)
 
 res=cur.fetchall()
-result_df = pd.DataFrame(res, columns = ['ID', 'Views', 'Shares', 'Comments', 
-                                         'Likes', 'Create Time', 'Fetch Time', 
-                                         'Elapsed Time'])
-# result_df = pd.concat([pd.DataFrame([[]], columns = ['ID', 'Views', 'Shares', 'Comments', 
-#                                          'Likes', 'Create Time', 'Fetch Time', 
-#                                          'Elapsed Time']), result_df])
-result_df['VPL'] = result_df['Views'] / result_df['Likes']
+result_df = pd.DataFrame(res, columns = [desc[0] for desc in cur.description])
+result_df['VPL'] = result_df['play_count'] / result_df['like_count']
 
 
 # plt.plot(result_df['VPL'], result_df['inferred_vpl'])                    
@@ -137,17 +126,15 @@ def run_subset(df, ident):
     ax[0].set_ylabel('Views') 
     ax[1].set_xlabel('Minutes since publication')
 
-for ident in np.unique(result_df['ID']):
-    # run_subset(result_df, ident)
-    pass
 
 fig, ax = plt.subplots(1,1, figsize = (13, 8))
-result_df['Time in Seconds'] = [t.timestamp() for t in result_df['Fetch Time']]
-ids = np.unique(result_df['ID'])
+result_df['Time in Seconds'] = [t.timestamp() for t in result_df['fetch_time']]
+ids = np.unique(result_df['id'])
 def plot_id(ids):
-    one = result_df[result_df['ID'] == ids]
-    ax.plot(one['Elapsed Time'], one['Views'],
-                  label = id_map[ids])
+    one = result_df[result_df['id'] == ids]
+    one['normalized_views'] = one['play_count'] / max(one['play_count'])
+    ax.plot(one['elapsed_time'], one['normalized_views'])
+                  # label = id_map[ids])
 for idx in ids:
     plot_id(idx)
 ax.set_ylabel('Views')
