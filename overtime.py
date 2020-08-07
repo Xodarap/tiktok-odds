@@ -33,7 +33,9 @@ id_map = {6852376935411010822: 'posting frequency',
          6856426933966621958: 'valgrind',
          6856492989137603846: 'gpt3 mean girls',
          6856842489123409157: 'p value',
-         6857171668180143365: 'gpt3 algorithm advice'
+         6857171668180143365: 'gpt3 algorithm advice',
+         6857978583210544390: 'java c#',
+         6857652821790149893: 'live redux'
          }
 
 conn=psycopg2.connect('dbname=postgres user=postgres')

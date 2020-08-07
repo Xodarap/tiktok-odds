@@ -22,7 +22,7 @@ cur = conn.cursor()
 
 cur.execute("""
             select * 
-            from videos_delay_2
+            from videos_delay
 """)
 
 

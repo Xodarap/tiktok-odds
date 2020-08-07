@@ -29,10 +29,21 @@ import os
 conn=psycopg2.connect(os.getenv("DB_URL"))
 cur = conn.cursor()
 
-cur.execute("""select *
+cur.execute("""select m_sound_per_day.*, authorname
             from m_sound_per_day
-            where soundid = 6743772128031557633
-            --6787078702082607878
+            inner join sounds on sounds.id = soundid
+            where soundid in (
+            /*
+                (select soundid
+                from m_sound_per_day
+                group by soundid
+                order by sum(tm_vids) desc
+                limit 20)  
+                */
+                6758172399012677634 -- buttercup
+                ,6800996740322297858	--"Savage"
+                ,6744446812653947654	--"Lottery"
+            ) 
 """)
 
 result_df = pd.DataFrame(cur.fetchall(), columns = [desc[0] for desc in cur.description])
@@ -43,6 +54,41 @@ def make_subplots(nrow, ncol, **kw):
         return fig, [ax]
     return fig, ax
 
-fix, axs = make_subplots(2, 1, sharex = True)
-axs[0].plot_date(result_df['d'], result_df['num_vids'])
-axs[1].plot_date(result_df['d'], result_df['total_plays'])
+def do_plot(ax, relevant, show_legend = False):
+    l1 = ax.plot_date(relevant['d'], relevant['small_vids'].cumsum(), '-', label = '<10k Followers')
+    ax2 = ax.twinx()
+    l2 = ax2.plot_date(relevant['d'], relevant['tm_vids'].cumsum(), 'r-', label = '10M+ Followers')
+    title = relevant['sound_title'].head(1).reset_index(drop = True)[0] + \
+        ' - ' + \
+        relevant['authorname'].head(1).reset_index(drop = True)[0]
+    ax.set_title(title)
+    ax.set_yticks([])
+    ax.set_xticks([])
+    ax2.set_yticks([])
+    ax.set_ylabel('Cumulative # Of Videos')
+    if show_legend:
+        lns = l1+l2
+        labs = [l.get_label() for l in lns]
+        ax.legend(lns, labs, loc=0)
+
+def plot_per_vid(result_df):
+    ids = result_df['soundid'].unique()
+    # grouped = result_df.group_by(['soundid','d'])
+    # fig, axs = make_subplots(5, 4, figsize = (15, 10))
+    fig, axs = make_subplots(len(ids), 1, figsize = (6, 10))
+    show_legend = True
+    for idx, ax in zip(ids, axs.flatten()):
+        relevant = result_df[result_df['soundid'] == idx]
+        do_plot(ax, relevant, show_legend)
+        show_legend = False
+    axs[len(ids)-1].set_xlabel('Time')
+    # axs[0].legend()
+    fig.tight_layout()
+
+
+
+plot_per_vid(result_df)
+# fig, axs = make_subplots(1, 1)
+# relevant = result_df.groupby('d')[['small_vids', 'tm_vids']].sum()
+# relevant['d'] = relevant.index
+# do_plot(axs[0], relevant)
