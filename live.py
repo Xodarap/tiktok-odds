@@ -15,7 +15,7 @@ import time
 import json
 import os
 
-folder = 'stream_3'
+folder = 'stream_4'
 
 def histogram(df, username):
     plt.hist(np.log10(df['play_count']), density = True)
@@ -95,11 +95,12 @@ def print_extra_stats(username):
     cur.execute('''
                 select id,
                 sum(case when hashtag_name is not null then 1 else 0 end) tags,
-                sum(case when tagged_user is not null then 1 else 0 end) users,
-                max(fetch_time - create_time) as "Elapsed Time"
+                sum(case when tagged_user is not null then 1 else 0 end) users
+                from (
+                select distinct id, hashtag_name, tagged_user
                  from tiktok.videos_normalized_all m
                  left join tiktok.text_extra using (id)
-                 where author = (%s)
+                 where author = (%s)) q
                  group by id
                 ''', [username])        
     df = pd.DataFrame(cur.fetchall(), 
@@ -108,21 +109,40 @@ def print_extra_stats(username):
     print(f"Average tagged users: {np.mean(df['users'])}")
 
 def print_tag_stats(username):
+    api = TikTokApi()
     cur.execute('''
-            select hashtag_name, count(1)
-             from tiktok.videos_normalized_all m
-             left join tiktok.text_extra using (id)
-             where author = (%s)
-             group by hashtag_name
-             order by count(1) desc 
-             limit 10
+                select hashtag_name, count(1)
+                from (
+        select distinct on (id, hashtag_name) hashtag_name
+         from tiktok.videos_normalized_all m
+         left join tiktok.text_extra using (id)
+         where author = (%s)) q
+         group by hashtag_name
+         order by count(1) desc 
+         limit 10
             ''', [username])        
     df = pd.DataFrame(cur.fetchall(), 
                                columns = [desc[0] for desc in cur.description])   
+    def vid_count(tag, api):
+        try:
+            res = api.getHashtagObject(tag)
+            return [res['challengeInfo']['stats']['videoCount'], res['challengeInfo']['stats']['viewCount']]
+        
+        except:
+            return [0, 0]
+    res = [vid_count(tag, api) for tag in df['hashtag_name']]
+    df['video_count'] = [r[0] for r in res]
+    df['video_count_human'] = ["{:,}".format(r[0]) for r in res]
+    df['view_count'] = [r[1] for r in res]
+    df['avg views'] = ["{:,.2f}".format(a) for a in df['view_count'] / df['video_count']]
     print('Ten most used tags:')
-    print(df)
+    print(df[['hashtag_name', 'count', 'video_count_human']])
+    print('==========================')
+    print(df[['hashtag_name', 'count', 'avg views']])
     cur.execute('''
-        select hashtag_name, count(1)
+                select hashtag_name, count(1)
+                from (
+        select distinct on (id, hashtag_name) hashtag_name
          from tiktok.videos_normalized_all m
          left join tiktok.text_extra using (id)
          where author = (%s)
@@ -133,7 +153,7 @@ def print_tag_stats(username):
              'xyzbca',
              'viral',
              'foryou'
-         )
+         )) q
          group by hashtag_name
          order by count(1) desc 
          limit 10
@@ -165,7 +185,7 @@ def load(username, disp = False):
     if disp:
         print(f'Fetching {username}')
     try:
-        tiktoks = api.byUsername(username, count=50)
+        tiktoks = api.byUsername(username, count=500)
     except Exception as e:
         print(e)
     t_time=str(datetime.datetime.now())
@@ -180,7 +200,7 @@ def load(username, disp = False):
 
 def run_user(username):
     print(f'========== {username} =========')
-    #load(username)
+    load(username, True)
     cur.execute('''SELECT *
     from tiktok.videos_normalized
     where author = (%s)''', [username])
@@ -205,8 +225,7 @@ def run_user(username):
 
 
 names = [username]
-for name in names:
-    load(name, True)
+for name in names: 
     run_user(name)
     # plt.figure()
 

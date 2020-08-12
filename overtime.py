@@ -35,7 +35,12 @@ id_map = {6852376935411010822: 'posting frequency',
          6856842489123409157: 'p value',
          6857171668180143365: 'gpt3 algorithm advice',
          6857978583210544390: 'java c#',
-         6857652821790149893: 'live redux'
+         6857652821790149893: 'live redux',
+         6858299206667422982: 'shadowban',
+         6858349147012025605: 'auto r',
+         6858696770914880774: 'python bare minimum',
+         6859128521365736709: 'sigmoid',
+         6859814030719110405: 'trends'
          }
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
@@ -75,7 +80,7 @@ cur.execute("""select all_data.id,
                  from tiktok
                  where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
                  order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
-                 limit 6
+                 limit 3
              ) q
          ) 
           --union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
@@ -143,15 +148,26 @@ for ident in np.unique(result_df['ID']):
     # run_subset(result_df, ident)
     pass
 
-fig, ax = plt.subplots(1,1, figsize = (13, 8))
+fig, axs = plt.subplots(2,1, figsize = (13, 8))
+ax = axs[0]
 result_df['Time in Seconds'] = [t.timestamp() for t in result_df['Fetch Time']]
 ids = np.unique(result_df['ID'])
 def plot_id(ids):
     one = result_df[result_df['ID'] == ids]
+    label = id_map[ids] if ids in id_map else ''
     ax.plot(one['Elapsed Time'], one['Views'],
-                  label = id_map[ids])
+                  label = label)
+    axs[1].plot(one['Elapsed Time'], one['Likes'],
+                  label = label)
 for idx in ids:
     plot_id(idx)
 ax.set_ylabel('Views')
 ax.set_xlabel('Minutes since publication')
+vid_start = (pd.Timestamp('2020-08-10 20:52:00-07:00') - pd.Timedelta(hours = 1.4)) - pd.Timestamp('2020-08-07 13:57:31-07:00')
+vid_start = vid_start.total_seconds() / 60
+ax.plot([vid_start, vid_start], ax.get_ylim(), '--')
+vid_end = (pd.Timestamp('2020-08-10 20:52:00-07:00')) - pd.Timestamp('2020-08-07 13:57:31-07:00')
+vid_end  = vid_end.total_seconds() / 60
+ax.plot([vid_end , vid_end ], ax.get_ylim(), '--')
 ax.legend()
+conn.close()

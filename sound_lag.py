@@ -22,7 +22,7 @@ cur = conn.cursor()
 
 cur.execute("""
             select * 
-            from videos_delay
+            from videos_delay_all_10k
 """)
 
 
@@ -30,29 +30,32 @@ cur.execute("""
 df = pd.DataFrame(cur.fetchall(), columns = [desc[0] for desc in cur.description])
 conn.commit()
 conn.close()
-fig, ax = plt.subplots(1,1, sharex = True, figsize = (9, 14))
-ax = [ax]
-ax[0].scatter((df['rounded_delay']/10)/60/24, df['total_plays'], s = 5)
-# ax[1].scatter(df['rounded_delay']/10, df['small_plays'], s = 0.5)
-ax[0].set_yscale('log')
-# ax[0].set_xscale('log')
-# ax[1].set_yscale('log')
+fig, ax = plt.subplots(3,1, sharex = True, figsize = (9, 11))
+ax = ax
+
+df = df[df['rounded_delay'] >= 0] #todo
+df['avg'] = df['total_plays'] / df['number_of_videos']
+df['sem'] = 1.96 * df['total_plays_sd'].astype('float') / np.sqrt(df['number_of_videos'])
+ax[0].plot(df['rounded_delay'], df['avg'])
+ax[0].fill_between(df['rounded_delay'], df['avg'] - df['sem'], df['avg'] + df['sem'],
+                   alpha = 0.3)
 ax[0].set_title('Views vs. Time After Sound Creation')
-ax[0].set_xlabel('Days after sound creation')
-ax[0].set_ylabel('Views')
-ax[0].set_xlim(0, 300)
-# ax[1].set_title('Views vs. Time After Sound Creation (Creators w/ <10k Followers)')
-# ax[2].scatter(df['rounded_delay']/10, df['verified_plays'])
-# ax[2].set_yscale('log')
+ax[0].set_ylabel('Average Views')
 
-# fig, ax = plt.subplots(3,1, sharex = True)
-# ax[0].scatter(df['rounded_delay']/10, df['total_plays'] / df['total_likes'])
-# ax[0].set_yscale('log')
-# ax[1].scatter(df['rounded_delay']/10, df['small_plays'] / df['small_likes'])
-# ax[1].set_yscale('log')
+df['avg_small'] = df['small_plays'] / df['small_count']
+df['sem_small'] = 1.96 * df['small_plays_sd'].astype('float') / np.sqrt(df['small_count'])
+ax[1].plot(df['rounded_delay'], df['avg_small'])
+ax[1].fill_between(df['rounded_delay'], df['avg_small'] - df['sem_small'], df['avg_small'] + df['sem_small'],
+                   alpha = 0.3)
+ax[1].set_title('Views vs. Time After Sound Creation')
+ax[1].set_ylabel('Average Views')
 
-# fig, ax = plt.subplots(3,1, sharex = True)
-# ax[0].scatter(df['rounded_delay']/10, df['total_likes'])
-# ax[0].set_yscale('log')
-# ax[1].scatter(df['rounded_delay']/10, df['small_likes'])
-# ax[1].set_yscale('log')
+df['avg_big'] = df['big_plays'] / df['big_count']
+df['sem_big'] = 1.96 * df['big_plays_sd'].astype('float') / np.sqrt(df['big_count'])
+ax[2].plot(df['rounded_delay'], df['avg_big'])
+ax[2].fill_between(df['rounded_delay'], df['avg_big'] - df['sem_big'], df['avg_big'] + df['sem_big'],
+                   alpha = 0.3)
+ax[2].set_title('Views vs. Time After Sound Creation')
+ax[2].set_ylabel('Average Views')
+
+conn.close()

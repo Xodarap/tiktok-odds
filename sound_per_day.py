@@ -40,7 +40,7 @@ cur.execute("""select m_sound_per_day.*, authorname
                 order by sum(tm_vids) desc
                 limit 20)  
                 */
-                6758172399012677634 -- buttercup
+                	6796513206148909829 -- "Chinese New Year"
                 ,6800996740322297858	--"Savage"
                 ,6744446812653947654	--"Lottery"
             ) 
@@ -88,6 +88,7 @@ def plot_per_vid(result_df):
 
 
 plot_per_vid(result_df)
+conn.close()
 # fig, axs = make_subplots(1, 1)
 # relevant = result_df.groupby('d')[['small_vids', 'tm_vids']].sum()
 # relevant['d'] = relevant.index
