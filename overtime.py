@@ -40,7 +40,9 @@ id_map = {6852376935411010822: 'posting frequency',
          6858349147012025605: 'auto r',
          6858696770914880774: 'python bare minimum',
          6859128521365736709: 'sigmoid',
-         6859814030719110405: 'trends'
+         6859814030719110405: 'trends',
+         6860178143399955718: 'trends - which',
+         6860556782067092742: 'natalia'
          }
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
