@@ -13,9 +13,10 @@ import os
 import urllib.request as urlreq
 from pylab import rcParams
 
-src = cv.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
-src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
+# src = cv.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
+src = cv.imread("D:\\Pictures\\Best head shots\\makeup1.jpg")
 src2 = src.copy()
+src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
 
 # plt.imshow(grad,  cmap='gray')
 # save face detection algorithm's url in haarcascade_url variable
@@ -87,27 +88,50 @@ for landmark in eyes:
     for x,y in landmark[0]:
 		# display landmarks on "image_cropped"
 		# with white colour in BGR and thickness 1
-        print((x,y))
+        # print((x,y))
         cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 5)
+(x1,_) = landmarks[0][0][36]
+(x2,_) = landmarks[0][0][39]
+(_,y1) = landmarks[0][0][40]
+(_,y2) = landmarks[0][0][38]
+x1 = int(x1)
+x2 = int(x2)
+y1 = int(y1)
+y2 = int(y1) + int(y1 - y2)
+cv2.rectangle(image_cropped,(x1, y1), (x2, y2),(255, 255, 255), 5)
 plt.axis("off")
-# plt.imshow(image_cropped)
-
-
+plt.imshow(image_cropped)
+# erfsaw
+plt.figure()
 window_name = ('Sobel Demo - Simple Edge Detector')
 scale = 1
 delta = 0
 ddepth = cv.CV_16S
-src = cv.GaussianBlur(src, (3, 3), 0)
-gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
-
+# src2 = src #cv.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
+src2 = cv.GaussianBlur(src2, (3, 3), 0)
+gray = cv.cvtColor(src2, cv.COLOR_BGR2GRAY)
 grad_x = cv.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, borderType=cv.BORDER_DEFAULT)
 # Gradient-Y
 # grad_y = cv.Scharr(gray,ddepth,0,1)
 grad_y = cv.Sobel(gray, ddepth, 0, 1, ksize=3, scale=scale, delta=delta, borderType=cv.BORDER_DEFAULT)
 
-
 abs_grad_x = cv.convertScaleAbs(grad_x)
 abs_grad_y = cv.convertScaleAbs(grad_y)
 
 grad = cv.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
+def above(n, array):
+    def row(r):
+        return [10 if v > n else 0 for v in r]
+    return [row(r) for r in array]
+grad = np.array(grad)
+# grad = (grad > np.mean(grad)) * grad
+threshold = np.mean(grad) + np.std(grad)
+grad[grad < threshold] = 0
+grad[grad >= threshold] = 1
+# cv2.rectangle(grad, (x1, y1), (x2, y2),(1, 0, 0), 5)
+# grad = above(np.mean(grad), grad)
+relevant = grad[y1:y2, x1:x2]
 plt.imshow(grad)
+plt.figure()
+plt.imshow(relevant)
+print(np.sum(relevant))
