@@ -14,9 +14,9 @@ import urllib.request as urlreq
 from pylab import rcParams
 
 # src = cv.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
-src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\control.jpg")
+# src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\control.jpg")
 # src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\covergirl.jpg")
-# src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\age rewind.jpg")
+src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\age rewind.jpg")
 # src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\loreal.jpg")
 src2 = src.copy()
 src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
@@ -141,5 +141,4 @@ plt.imshow(grad)
 plt.figure()
 plt.imshow(relevant)
 (l, w) = relevant.shape
-total = l * w
 print(np.sum(relevant) / (l * w))
