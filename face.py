@@ -2,16 +2,14 @@
 """
 Created on Thu Aug 20 18:41:31 2020
 
-@author: bwsit
+@author: Ben West
 """
 
 import cv2
-import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import urllib.request as urlreq
-from pylab import rcParams
 
 def find_faces(src):
     # save face detection algorithm's url in haarcascade_url variable
@@ -42,7 +40,7 @@ def find_faces(src):
     print("Faces:\n", faces)
     
     for face in faces:
-    #     save the coordinates in x, y, w, d variables
+        # save the coordinates in x, y, w, d variables
         (x,y,w,d) = face
         # Draw a white coloured rectangle around each face using the face's coordinates
         # on the "image_template" with the thickness of 2 
@@ -55,6 +53,7 @@ def find_faces(src):
     plt.title('Face Detection')
     plt.figure()
     return faces, image_gray
+
 def find_landmarks(image_gray, image_cropped, faces):
     # save facial landmark detection model's url in LBFmodel_url variable
     LBFmodel_url = "https://github.com/kurnianggoro/GSOC2017/raw/master/data/lbfmodel.yaml"
@@ -84,8 +83,8 @@ def find_landmarks(image_gray, image_cropped, faces):
         for x,y in landmark[0]:
     		# display landmarks on "image_cropped"
     		# with white colour in BGR and thickness 1
-            # print((x,y))
             cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 7)
+    
     plt.imshow(image_cropped)
     plt.title('Landmarks')        
     # (x1,_) = landmarks[0][0][36]
@@ -99,7 +98,7 @@ def find_landmarks(image_gray, image_cropped, faces):
     x2 = int(x2) + int(0.2*(x2 - x1))
     y1 = int(y1)
     y2 = int(y1) + int(y1 - y2)
-    cv2.rectangle(image_cropped,(x1, y1), (x2, y2),(255, 255, 255), 2)
+    cv2.rectangle(image_cropped, (x1, y1), (x2, y2), (255, 255, 255), 2)
     plt.axis("off")
     plt.imshow(image_cropped)
     plt.figure()
@@ -108,23 +107,21 @@ def find_landmarks(image_gray, image_cropped, faces):
 def find_edges(src2):
     scale = 1
     delta = 0
-    ddepth = cv.CV_16S
+    ddepth = cv2.CV_16S
     
-    src2 = cv.GaussianBlur(src2, (3, 3), 0)
-    gray = cv.cvtColor(src2, cv.COLOR_BGR2GRAY)
-    grad_x = cv.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, borderType=cv.BORDER_DEFAULT)
+    src2 = cv2.GaussianBlur(src2, (3, 3), 0)
+    gray = cv2.cvtColor(src2, cv2.COLOR_BGR2GRAY)
+    grad_x = cv2.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, 
+                      borderType=cv2.BORDER_DEFAULT)
     # Gradient-Y
-    # grad_y = cv.Scharr(gray,ddepth,0,1)
-    grad_y = cv.Sobel(gray, ddepth, 0, 1, ksize=3, scale=scale, delta=delta, borderType=cv.BORDER_DEFAULT)
+    # grad_y = cv2.Scharr(gray,ddepth,0,1)
+    grad_y = cv2.Sobel(gray, ddepth, 0, 1, ksize=3, scale=scale, delta=delta, 
+                      borderType=cv2.BORDER_DEFAULT)
     
-    abs_grad_x = cv.convertScaleAbs(grad_x)
-    abs_grad_y = cv.convertScaleAbs(grad_y)
+    abs_grad_x = cv2.convertScaleAbs(grad_x)
+    abs_grad_y = cv2.convertScaleAbs(grad_y)
     
-    grad = cv.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
-    def above(n, array):
-        def row(r):
-            return [10 if v > n else 0 for v in r]
-        return [row(r) for r in array]
+    grad = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
     grad = np.array(grad)
     threshold = np.mean(grad) + np.std(grad)
     grad[grad < threshold] = 0
@@ -135,14 +132,13 @@ def find_edges(src2):
     return grad
 
 def run_image(folder, file_name):
-    src = cv.imread(folder + file_name)
+    src = cv2.imread(folder + file_name)
     src2 = src.copy()
     src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
     
     faces, image_gray = find_faces(src)
     x1,y1,x2,y2 = find_landmarks(image_gray, src, faces)
-    grad = find_edges(src2)
-    
+    grad = find_edges(src2)    
     
     relevant = grad[y1:y2, x1:x2]
     plt.imshow(relevant)
@@ -152,6 +148,6 @@ def run_image(folder, file_name):
 folder = "D:\\Documents\\tiktok-live-graphs\\makeup\\"
 file_name = "covergirl.jpg"
 run_image(folder, file_name)
-# src = cv.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
-# src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\control.jpg")
-# src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\covergirl.jpg")
+# src = cv2.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
+# src = cv2.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\control.jpg")
+# src = cv2.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\covergirl.jpg")
