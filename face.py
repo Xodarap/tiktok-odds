@@ -60,8 +60,9 @@ for face in faces:
     cv2.rectangle(image_template,(x,y),(x2, y2),(255, 255, 255), 5)
 
 plt.axis("off")
-# plt.imshow(image_template)
+plt.imshow(image_template)
 plt.title('Face Detection')
+plt.figure()
 # (x,y,w,d) = faces[0]
 # image_gray = image_gray[x:x+w, y:y+w]
 # save facial landmark detection model's url in LBFmodel_url variable
@@ -87,12 +88,14 @@ _, landmarks = landmark_detector.fit(image_gray, np.array([faces[0]]))
 
 eyes = [np.array([landmarks[0][0][36:42]])]
 
-for landmark in eyes:
+for landmark in landmarks:
     for x,y in landmark[0]:
 		# display landmarks on "image_cropped"
 		# with white colour in BGR and thickness 1
         # print((x,y))
-        cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 5)
+        cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 7)
+plt.imshow(image_cropped)
+plt.title('Landmarks')        
 # (x1,_) = landmarks[0][0][36]
 (x1,_) = landmarks[0][0][40]
 (x2,_) = landmarks[0][0][39]
@@ -109,7 +112,6 @@ plt.axis("off")
 plt.imshow(image_cropped)
 # erfsaw
 plt.figure()
-window_name = ('Sobel Demo - Simple Edge Detector')
 scale = 1
 delta = 0
 ddepth = cv.CV_16S
@@ -138,7 +140,9 @@ grad[grad >= threshold] = 1
 # grad = above(np.mean(grad), grad)
 relevant = grad[y1:y2, x1:x2]
 plt.imshow(grad)
+plt.title('Sobel Edge Detection')
 plt.figure()
 plt.imshow(relevant)
+plt.title('Edge Detection - Zoomed In')
 (l, w) = relevant.shape
 print(np.sum(relevant) / (l * w))
