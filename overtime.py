@@ -42,7 +42,9 @@ id_map = {6852376935411010822: 'posting frequency',
          6859128521365736709: 'sigmoid',
          6859814030719110405: 'trends',
          6860178143399955718: 'trends - which',
-         6860556782067092742: 'natalia'
+         6860556782067092742: 'natalia',
+         6862180726989704454: 'vanity',
+         6862752188540767493: 'beauty qoves'
          }
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
@@ -69,20 +71,22 @@ cur.execute("""select all_data.id,
 		 where all_data.id in ( 
              --6852376935411010822, -- posting frequency
              --6851335018715811078 -- vpl
-             --6838386972445248773 -- most popular (beautiful)
+             select 6838386972445248773 -- most popular (beautiful)
              --6845799211468918021 -- R
+             -- 6858349147012025605 -- auto r
              --)
              --select 6853576412276788486
              --union all 
              --select 6838386972445248773
-             --union all
+             union all
+             
              select id from (
                  select distinct (tiktok.json ->> 'id'::text)::bigint AS id,
                  to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision)
                  from tiktok
                  where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
                  order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
-                 limit 3
+                 limit 1
              ) q
          ) 
           --union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
@@ -150,8 +154,8 @@ for ident in np.unique(result_df['ID']):
     # run_subset(result_df, ident)
     pass
 
-fig, axs = plt.subplots(2,1, figsize = (13, 8))
-ax = axs[0]
+fig, axs = plt.subplots(1,1, figsize = (7, 5))
+ax = axs #[0]
 result_df['Time in Seconds'] = [t.timestamp() for t in result_df['Fetch Time']]
 ids = np.unique(result_df['ID'])
 def plot_id(ids):
@@ -159,17 +163,19 @@ def plot_id(ids):
     label = id_map[ids] if ids in id_map else ''
     ax.plot(one['Elapsed Time'], one['Views'],
                   label = label)
-    axs[1].plot(one['Elapsed Time'], one['Likes'],
-                  label = label)
+    # axs[1].plot(one['Elapsed Time'], one['Likes'],
+    #               label = label)
 for idx in ids:
     plot_id(idx)
+    run_subset(result_df, idx)
 ax.set_ylabel('Views')
 ax.set_xlabel('Minutes since publication')
 vid_start = (pd.Timestamp('2020-08-10 20:52:00-07:00') - pd.Timedelta(hours = 1.4)) - pd.Timestamp('2020-08-07 13:57:31-07:00')
 vid_start = vid_start.total_seconds() / 60
-ax.plot([vid_start, vid_start], ax.get_ylim(), '--')
+# ax.plot([vid_start, vid_start], ax.get_ylim(), '--', label = 'Live Start')
 vid_end = (pd.Timestamp('2020-08-10 20:52:00-07:00')) - pd.Timestamp('2020-08-07 13:57:31-07:00')
 vid_end  = vid_end.total_seconds() / 60
-ax.plot([vid_end , vid_end ], ax.get_ylim(), '--')
+# ax.plot([vid_end , vid_end ], ax.get_ylim(), '--', label = 'Live End')
 ax.legend()
 conn.close()
+fig.tight_layout()

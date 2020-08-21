@@ -34,7 +34,7 @@ def vid_count(tag, api):
                 ''', (tag, vid_count, view_count, cid, str(datetime.datetime.now())))
     conn.commit()
     vid_view_ratio="{:,.2f}".format(float(view_count)/float(vid_count))
-    print("%s\t%s\t%s\t%s\t" % (tag, vid_view_ratio,vid_count, view_count))
+    print("%s\t\t%s\t%s\t%s\t" % (tag, vid_view_ratio,vid_count, view_count))
 api = TikTokApi()
 '''
 vid_count('art', api)
@@ -43,7 +43,6 @@ vid_count('collageart', api)
 vid_count('handmade', api)
 vid_count('crafty', api)
 vid_count('diy', api)
-'''
 vid_count('tiktokalgorithm', api)
 vid_count('algorithm', api)
 vid_count('statistics', api)
@@ -51,3 +50,7 @@ vid_count('algorithim', api)
 vid_count('tiktokhack', api)
 vid_count('tiktokhacks', api)
 vid_count('algorithmhack', api)
+'''
+cur.execute('''select distinct cha_name from tiktok.insight_challenge_normalized''')
+for r in cur.fetchall():
+    vid_count(r[0], api)

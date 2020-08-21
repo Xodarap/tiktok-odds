@@ -107,6 +107,20 @@ def print_extra_stats(username):
                                columns = [desc[0] for desc in cur.description])   
     print(f"Average hashtags: {np.mean(df['tags'])}")
     print(f"Average tagged users: {np.mean(df['users'])}")
+def get_tag(tag):
+    existing = cur.execute('select video_count, view_count from tiktok.tag_data where name = %s', [tag])     
+    return existing.fetchall()[0]
+def save_tag(tag, api):
+    res = api.getHashtagObject(tag)
+    cid = int(res['challengeInfo']['challenge']['id'])
+    vid_count = res['challengeInfo']['stats']['videoCount'] 
+    view_count = res['challengeInfo']['stats']['viewCount']
+    cur.execute('''
+                INSERT INTO tiktok.tag_data(
+            	name, video_count, view_count, challenge_id, fetch_time)
+            	VALUES (%s, %s, %s, %s, %s);
+                ''', (tag, vid_count, view_count, cid, str(datetime.datetime.now())))
+    conn.commit()
 
 def print_tag_stats(username):
     api = TikTokApi()
@@ -123,8 +137,10 @@ def print_tag_stats(username):
             ''', [username])        
     df = pd.DataFrame(cur.fetchall(), 
                                columns = [desc[0] for desc in cur.description])   
+                              
     def vid_count(tag, api):
         try:
+            
             res = api.getHashtagObject(tag)
             return [res['challengeInfo']['stats']['videoCount'], res['challengeInfo']['stats']['viewCount']]
         
