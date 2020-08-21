@@ -14,7 +14,10 @@ import urllib.request as urlreq
 from pylab import rcParams
 
 # src = cv.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
-src = cv.imread("D:\\Pictures\\Best head shots\\makeup1.jpg")
+src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\control.jpg")
+# src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\covergirl.jpg")
+# src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\age rewind.jpg")
+# src = cv.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\loreal.jpg")
 src2 = src.copy()
 src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
 
@@ -90,15 +93,18 @@ for landmark in eyes:
 		# with white colour in BGR and thickness 1
         # print((x,y))
         cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 5)
-(x1,_) = landmarks[0][0][36]
+# (x1,_) = landmarks[0][0][36]
+(x1,_) = landmarks[0][0][40]
 (x2,_) = landmarks[0][0][39]
 (_,y1) = landmarks[0][0][40]
+(_,y12) = landmarks[0][0][41]
 (_,y2) = landmarks[0][0][38]
+y1 = max(y1, y12) #lower of two bottom eyelid
 x1 = int(x1)
-x2 = int(x2)
+x2 = int(x2) + int(0.2*(x2 - x1))
 y1 = int(y1)
 y2 = int(y1) + int(y1 - y2)
-cv2.rectangle(image_cropped,(x1, y1), (x2, y2),(255, 255, 255), 5)
+cv2.rectangle(image_cropped,(x1, y1), (x2, y2),(255, 255, 255), 2)
 plt.axis("off")
 plt.imshow(image_cropped)
 # erfsaw
@@ -134,4 +140,6 @@ relevant = grad[y1:y2, x1:x2]
 plt.imshow(grad)
 plt.figure()
 plt.imshow(relevant)
-print(np.sum(relevant))
+(l, w) = relevant.shape
+total = l * w
+print(np.sum(relevant) / (l * w))
