@@ -49,9 +49,9 @@ def find_faces(src):
         cv2.rectangle(image_template,(x,y),(x2, y2),(255, 255, 255), 5)
     
     plt.axis("off")
-    plt.imshow(image_template)
-    plt.title('Face Detection')
-    plt.figure()
+    # plt.imshow(image_template)
+    # plt.title('Face Detection')
+    # plt.figure()
     return faces, image_gray
 
 def find_landmarks(image_gray, image_cropped, faces):
@@ -81,7 +81,7 @@ def find_landmarks(image_gray, image_cropped, faces):
     
     for landmark in landmarks:
         for x,y in landmark[0]:
-    		# display landmarks on "image_cropped"
+    		# display landmarks on "image_cropped"https://www.qoves.com/wp-admin/admin-ajax.php
     		# with white colour in BGR and thickness 1
             cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 7)
     
@@ -91,25 +91,29 @@ def find_landmarks(image_gray, image_cropped, faces):
     (x1,_) = landmarks[0][0][40]
     (x2,_) = landmarks[0][0][39]
     (_,y1) = landmarks[0][0][40]
-    (_,y12) = landmarks[0][0][41]
+    (x3,y12) = landmarks[0][0][41]
     (_,y2) = landmarks[0][0][38]
     y1 = max(y1, y12) #lower of two bottom eyelid
     x1 = int(x1)
     x2 = int(x2) + int(0.2*(x2 - x1))
     y1 = int(y1)
     y2 = int(y1) + int(y1 - y2)
+    x3 = int(x3)
+    y3 = int(y1 - 5 * (y1 - y2))
+    y4 = y3 + int(y1- y2)
     cv2.rectangle(image_cropped, (x1, y1), (x2, y2), (255, 255, 255), 2)
+    cv2.rectangle(image_cropped, (x3, y3), (x1, y4), (255, 255, 255), 2)
     plt.axis("off")
     plt.imshow(image_cropped)
     plt.figure()
-    return x1,y1,x2,y2
+    return x1,y1,x2,y2,x3,y3,y4
 
 def find_edges(src2):
     scale = 1
     delta = 0
     ddepth = cv2.CV_16S
     
-    src2 = cv2.GaussianBlur(src2, (3, 3), 0)
+    src2 = cv2.GaussianBlur(src2, (9, 9), 9)
     gray = cv2.cvtColor(src2, cv2.COLOR_BGR2GRAY)
     grad_x = cv2.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, 
                       borderType=cv2.BORDER_DEFAULT)
@@ -123,10 +127,10 @@ def find_edges(src2):
     
     grad = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
     grad = np.array(grad)
-    threshold = np.mean(grad) + np.std(grad)
+    threshold = np.mean(grad) + 1.3 * np.std(grad)
     grad[grad < threshold] = 0
     grad[grad >= threshold] = 1
-    plt.imshow(grad)
+    plt.imshow(grad, cmap = 'gray')
     plt.title('Sobel Edge Detection')
     plt.figure()
     return grad
@@ -141,13 +145,67 @@ def run_image(folder, file_name):
     grad = find_edges(src2)    
     
     relevant = grad[y1:y2, x1:x2]
-    plt.imshow(relevant)
+    plt.imshow(relevant, cmap = 'gray')
     plt.title('Edge Detection - Zoomed In')
     print(f"Fraction of {file_name} which is wrinkles: {np.sum(relevant) / relevant.size}")
 
-folder = "D:\\Documents\\tiktok-live-graphs\\makeup\\"
-file_name = "covergirl.jpg"
-run_image(folder, file_name)
+folder = "D:\\Documents\\tiktok-live-graphs\\makeup-lacey-concealer\\"
+file_name = "maybelline.jpg"
+src = cv2.imread(folder + file_name)
+src2 = src.copy()
+src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
+
+faces, image_gray = find_faces(src)
+x1,y1,x2,y2,x3,y3,y4 = find_landmarks(image_gray, src, faces)
+grad = find_edges(src2)    
+
+relevant = grad[y1:y2, x1:x2]
+plt.imshow(relevant)
+plt.title('Edge Detection - Zoomed In')
+print(f"Fraction of {file_name} which is wrinkles: {np.sum(relevant) / relevant.size}")
+
+
+swatch1 = src[y1:y2, x1:x2]
+swatch2 = src[y4:y3, x3:x1]
+def get_avg(swatch):
+    a = swatch.mean(axis=0).mean(axis=0)
+    # plt.figure()
+    # plt.imshow([[a.astype('int32')] * 5] * 5)
+    return a
+a1 = get_avg(swatch1)
+a2 = get_avg(swatch2)
+print(f"Color distance: {np.linalg.norm(a1-a2)}")
+
+# def build_filters():
+#     filters = []
+#     ksize = 40
+#     for theta in np.arange(0, np.pi, np.pi / 8):
+#         for lamda in np.arange(0, np.pi, np.pi/4):
+#             kern = cv2.getGaborKernel((ksize, ksize), 4.0, theta, 10.0, 0.5, 0, ktype=cv2.CV_32F)
+#             kern /= 1.5*kern.sum()
+#             filters.append(kern)
+#     return filters
+ 
+# def process(img, filters):
+#     accum = np.zeros_like(img)
+#     for kern in filters:
+#         fimg = cv2.filter2D(img, cv2.CV_8UC3, kern)
+#         np.maximum(accum, fimg, accum)
+#     return accum
+
+# filters = build_filters()
+# image_gray = cv2.GaussianBlur(image_gray, (5, 5), 5)
+# res1 = process(image_gray, filters)
+# plt.figure()
+# plt.imshow(res1, cmap = 'gray')
+
+# edges = cv2.Canny(image_gray,50,150)
+
+# plt.figure()
+# plt.imshow(edges,cmap = 'gray')
+# res1 = cv2.resize(res1, (400, 400))
+# cv2.imshow('result', res1)
+# run_image(folder, file_name)
 # src = cv2.imread("D:\\Pictures\\Best head shots\\lace2.jpg")
 # src = cv2.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\control.jpg")
 # src = cv2.imread("D:\\Documents\\tiktok-live-graphs\\makeup\\covergirl.jpg")

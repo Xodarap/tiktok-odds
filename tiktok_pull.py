@@ -2490,7 +2490,7 @@ names = map(lambda n: n.lower(), names)
 
 conn2=psycopg2.connect(os.getenv("DB_URL"))
 cur2 = conn2.cursor()
-names = ['benthamite', 'mathematicanese']
+names = ['benthamite'] #, 'mathematicanese']
 api = TikTokApi(cookie_string = 'tt_webid_v2=6778908448421594630; _ga=GA1.2.1798398769.1578337619; cookie-consent={%22ga%22:true%2C%22af%22:true}; store-idc=maliva; store-country-code=us; _gid=GA1.2.1758829645.1597117296; passport_csrf_token=c373ddceddebf0e13090b45c52e13d6a; passport_auth_status=02c7bf6ec36e4da06e9525387d76f6f8%2C; sid_guard=5e795b6273400528e220b87e1c270d3f%7C1597331023%7C5184000%7CMon%2C+12-Oct-2020+15%3A03%3A43+GMT; uid_tt=d78b7d792eb3ad61cb5916945dda4d8175dbb3d23e9b6611f7c2946edc31c1d9; uid_tt_ss=d78b7d792eb3ad61cb5916945dda4d8175dbb3d23e9b6611f7c2946edc31c1d9; sid_tt=5e795b6273400528e220b87e1c270d3f; sessionid=5e795b6273400528e220b87e1c270d3f; sessionid_ss=5e795b6273400528e220b87e1c270d3f; _gat_gtag_UA_144727112_1=1')
 
 for i in range(0,6000):    

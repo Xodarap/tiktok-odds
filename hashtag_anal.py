@@ -51,6 +51,13 @@ vid_count('tiktokhack', api)
 vid_count('tiktokhacks', api)
 vid_count('algorithmhack', api)
 '''
-cur.execute('''select distinct cha_name from tiktok.insight_challenge_normalized''')
-for r in cur.fetchall():
-    vid_count(r[0], api)
+# cur.execute('''select distinct cha_name from tiktok.insight_challenge_normalized''')
+# for r in cur.fetchall():
+#     vid_count(r[0], api)
+
+tags = ['beauty', 'everydaybeauty', 'beautyessentials', 'makeup',
+        'beautyhacks', 'beautytipsandtricks', 'learnontiktok',
+        'makeuptip', 'edutok', 'beautytips', 'beautyreview',
+        'boysinmakeup']
+for tag in tags:
+    vid_count(tag, api)

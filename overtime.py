@@ -44,7 +44,14 @@ id_map = {6852376935411010822: 'posting frequency',
          6860178143399955718: 'trends - which',
          6860556782067092742: 'natalia',
          6862180726989704454: 'vanity',
-         6862752188540767493: 'beauty qoves'
+         6862752188540767493: 'beauty qoves',
+         6863841792542985477: 'beauty edge',
+         6865353181707144453: 'lacey concealer 1',
+         6865105998059785478: 'cat tag',
+         6865093559071165702: 'cat tag deleted',
+         6864703522835942662: 'live trend',
+         6863841792542985477: 'makeup wrinkle',
+         6862752188540767493: 'makeup popular'
          }
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
@@ -71,14 +78,14 @@ cur.execute("""select all_data.id,
 		 where all_data.id in ( 
              --6852376935411010822, -- posting frequency
              --6851335018715811078 -- vpl
-             select 6838386972445248773 -- most popular (beautiful)
+             --select 6838386972445248773 -- most popular (beautiful)
              --6845799211468918021 -- R
              -- 6858349147012025605 -- auto r
              --)
              --select 6853576412276788486
              --union all 
              --select 6838386972445248773
-             union all
+             --union all
              
              select id from (
                  select distinct (tiktok.json ->> 'id'::text)::bigint AS id,
@@ -86,7 +93,7 @@ cur.execute("""select all_data.id,
                  from tiktok
                  where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
                  order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
-                 limit 1
+                 limit 2
              ) q
          ) 
           --union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
@@ -105,7 +112,8 @@ result_df['VPL'] = result_df['Views'] / result_df['Likes']
 
 # plt.plot(result_df['VPL'], result_df['inferred_vpl'])                    
 def interpolate_zeros(vals):
-    out = vals.copy().reindex(range(0, len(vals)))
+    out = vals.copy()
+    out.index = (range(0, len(vals)))
     start_idx = None
     def interpolate(vals, start, end):
         buckets = (end+1)-start
@@ -132,7 +140,7 @@ def run_subset(df, ident):
     result_df['Views_1'] = result_df['Views'].shift(1)
     result_df['Likes_1'] = result_df['Likes'].shift(1)
     result_df['d_v'] = (result_df['Views'] - result_df['Views_1']).rolling(window = 3).mean()
-    result_df['d_v'] = interpolate_zeros(result_df['d_v'])
+    result_df['d_v_i'] = interpolate_zeros(result_df['d_v'])
     result_df['d_l'] = (result_df['Likes'] - result_df['Likes_1']).rolling(window = 3).mean()
     result_df['d_l_1'] = result_df['d_l'].shift(1)
     result_df['d_vpl'] = (result_df['d_v']) / (result_df['d_l_1'])
