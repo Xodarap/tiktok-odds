@@ -37,7 +37,7 @@ def find_faces(src):
     faces = detector.detectMultiScale(src)
     
     # Print coordinates of detected faces
-    print("Faces:\n", faces)
+    # print("Faces:\n", faces)
     
     for face in faces:
         # save the coordinates in x, y, w, d variables
@@ -54,7 +54,7 @@ def find_faces(src):
     # plt.figure()
     return faces, image_gray
 
-def find_landmarks(image_gray, image_cropped, faces):
+def find_landmarks(image_gray, image_cropped, faces, title):
     # save facial landmark detection model's url in LBFmodel_url variable
     LBFmodel_url = "https://github.com/kurnianggoro/GSOC2017/raw/master/data/lbfmodel.yaml"
     
@@ -86,7 +86,7 @@ def find_landmarks(image_gray, image_cropped, faces):
             cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 7)
     
     plt.imshow(image_cropped)
-    plt.title('Landmarks')        
+    plt.title(f'{title}')        
     # (x1,_) = landmarks[0][0][36]
     (x1,_) = landmarks[0][0][40]
     (x2,_) = landmarks[0][0][39]
@@ -108,13 +108,14 @@ def find_landmarks(image_gray, image_cropped, faces):
     plt.figure()
     return x1,y1,x2,y2,x3,y3,y4
 
-def find_edges(src2):
+def find_edges(src2, title):
     scale = 1
     delta = 0
     ddepth = cv2.CV_16S
     
-    src2 = cv2.GaussianBlur(src2, (9, 9), 9)
+    src2 = cv2.GaussianBlur(src2, (3, 3), 3)
     gray = cv2.cvtColor(src2, cv2.COLOR_BGR2GRAY)
+    gray = cv2.equalizeHist(gray)
     grad_x = cv2.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, 
                       borderType=cv2.BORDER_DEFAULT)
     # Gradient-Y
@@ -131,50 +132,43 @@ def find_edges(src2):
     grad[grad < threshold] = 0
     grad[grad >= threshold] = 1
     plt.imshow(grad, cmap = 'gray')
-    plt.title('Sobel Edge Detection')
+    plt.title(title)
     plt.figure()
     return grad
 
 def run_image(folder, file_name):
-    src = cv2.imread(folder + file_name)
+    src = cv2.imread(folder + file_name + '.jpg')
     src2 = src.copy()
     src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
     
     faces, image_gray = find_faces(src)
-    x1,y1,x2,y2 = find_landmarks(image_gray, src, faces)
-    grad = find_edges(src2)    
+    (x,y,w,d) = faces[0]
+    face_pic = src2[y:y+d, x:x+w]
+    x1,y1,x2,y2,x3,y3,y4 = find_landmarks(image_gray, src, faces, file_name)
+    relevant = src[y1:y2, x1:x2]
+    grad = find_edges(face_pic, file_name)    
     
-    relevant = grad[y1:y2, x1:x2]
+    relevant = grad[y1-y:y2-y, x1-x:x2-x]
     plt.imshow(relevant, cmap = 'gray')
-    plt.title('Edge Detection - Zoomed In')
+    plt.title(file_name)
     print(f"Fraction of {file_name} which is wrinkles: {np.sum(relevant) / relevant.size}")
+    swatch1 = src[y1:y2, x1:x2]
+    swatch2 = src[y4:y3, x3:x1]
+    def get_avg(swatch):
+        a = swatch.mean(axis=0).mean(axis=0)
+        # plt.figure()
+        # plt.imshow([[a.astype('int32')] * 5] * 5)
+        return a
+    a1 = get_avg(swatch1)
+    a2 = get_avg(swatch2)
+    print(f"Color distance: {np.linalg.norm(a1-a2)}")
 
-folder = "D:\\Documents\\tiktok-live-graphs\\makeup-lacey-concealer\\"
-file_name = "maybelline.jpg"
-src = cv2.imread(folder + file_name)
-src2 = src.copy()
-src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
+folder = "D:\\Documents\\tiktok-live-graphs\\makeup-overtime\\"
+# file_name = "covergirl end.jpg"
+product = 'loreal'
+for stage in ['control', 'start', 'end']:
+    run_image(folder, f'{product} {stage}')
 
-faces, image_gray = find_faces(src)
-x1,y1,x2,y2,x3,y3,y4 = find_landmarks(image_gray, src, faces)
-grad = find_edges(src2)    
-
-relevant = grad[y1:y2, x1:x2]
-plt.imshow(relevant)
-plt.title('Edge Detection - Zoomed In')
-print(f"Fraction of {file_name} which is wrinkles: {np.sum(relevant) / relevant.size}")
-
-
-swatch1 = src[y1:y2, x1:x2]
-swatch2 = src[y4:y3, x3:x1]
-def get_avg(swatch):
-    a = swatch.mean(axis=0).mean(axis=0)
-    # plt.figure()
-    # plt.imshow([[a.astype('int32')] * 5] * 5)
-    return a
-a1 = get_avg(swatch1)
-a2 = get_avg(swatch2)
-print(f"Color distance: {np.linalg.norm(a1-a2)}")
 
 # def build_filters():
 #     filters = []
