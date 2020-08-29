@@ -16,7 +16,7 @@ import ntpath
 import cv2
 import numpy as np
 
-def make_df(path):
+def make_qoves_df(path):
     folder_name = os.path.basename((path[:-1]))
     album = imgur.create_album(folder_name)
     album_hash = album['data']['deletehash']
@@ -55,9 +55,9 @@ def ben_anal(path):
     ben_df = pd.DataFrame(results, columns = ['Image', 'Color Distance', 'Wrinkle Percent'])
     ben_df.to_csv(path + 'ben.csv')
 
-path = "D:/Documents/tiktok-live-graphs/makeup-overtime/"
-ben_anal(path)
+def run_all(path):
+    ben_anal(path)
+    make_qoves_df(path)
 
-# df = pd.read_csv(path + 'qoves.csv')
-# table = pd.pivot_table(df, values = 'Confidence', columns ='Flaw', index = 'Image')
-# table.to_csv(path + 'qoves_pivot.csv')
+path = "D:/Documents/tiktok-live-graphs/makeup-bb/"
+run_all(path)
