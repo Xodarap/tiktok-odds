@@ -4,6 +4,7 @@ load_dotenv()
 import os
 import base64
 import requests
+import ntpath
 
 def upload_image(album_hash, path):
     fd = open(path, 'rb')
