@@ -7,7 +7,7 @@ Created on Thu Aug 20 18:41:31 2020
 
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import os
 import urllib.request as urlreq
 
@@ -48,7 +48,7 @@ def find_faces(src):
         x2 = x+w
         cv2.rectangle(image_template,(x,y),(x2, y2),(255, 255, 255), 5)
     
-    plt.axis("off")
+    # plt.axis("off")
     # plt.imshow(image_template)
     # plt.title('Face Detection')
     # plt.figure()
@@ -85,8 +85,8 @@ def find_landmarks(image_gray, image_cropped, faces, title):
     		# with white colour in BGR and thickness 1
             cv2.circle(image_cropped, (x, y), 1, (255, 255, 255), 7)
     
-    plt.imshow(image_cropped)
-    plt.title(f'{title}')        
+    # plt.imshow(image_cropped)
+    # plt.title(f'{title}')        
     # (x1,_) = landmarks[0][0][36]
     (x1,_) = landmarks[0][0][40]
     (x2,_) = landmarks[0][0][39]
@@ -103,10 +103,14 @@ def find_landmarks(image_gray, image_cropped, faces, title):
     y4 = y3 + int(y1- y2)
     cv2.rectangle(image_cropped, (x1, y1), (x2, y2), (255, 255, 255), 2)
     cv2.rectangle(image_cropped, (x3, y3), (x1, y4), (255, 255, 255), 2)
-    plt.axis("off")
-    plt.imshow(image_cropped)
-    plt.figure()
-    return x1,y1,x2,y2,x3,y3,y4
+    x5,y5 = landmarks[0][0][18]
+    x6,y6 = landmarks[0][0][51]
+    x5,y5,x6,y6 = map(int, [x5,y5,x6,y6])
+    # plt.axis("off")
+    # image_cropped = image_cropped[y5:y6,x5:x6]
+    # plt.imshow(image_cropped)
+    # plt.figure()
+    return x1,y1,x2,y2,x3,y3,y4,image_cropped,image_cropped[y5:y6,x5:x6]
 
 def find_edges(src2, title):
     scale = 1
@@ -131,10 +135,21 @@ def find_edges(src2, title):
     threshold = np.mean(grad) + 1.3 * np.std(grad)
     grad[grad < threshold] = 0
     grad[grad >= threshold] = 1
-    plt.imshow(grad, cmap = 'gray')
-    plt.title(title)
-    plt.figure()
+    # plt.imshow(grad, cmap = 'gray')
+    # plt.title(title)
+    # plt.figure()
     return grad
+
+class AnalResult():
+    def __init__(self, img_path, img_full, img_cropped, edge_full, edge_cropped,
+                 wrinkle_percent, color_distance):
+        self.img_path = img_path
+        self.img_full = img_full
+        self.img_cropped = img_cropped
+        self.edge_full = edge_full
+        self.edge_cropped = edge_cropped
+        self.wrinkle_percent = wrinkle_percent
+        self.color_distance = color_distance
 
 def run_image(folder, file_name):
     src = cv2.imread(folder + file_name + '.jpg')
@@ -144,14 +159,17 @@ def run_image(folder, file_name):
     faces, image_gray = find_faces(src)
     (x,y,w,d) = faces[0]
     face_pic = src2[y:y+d, x:x+w]
-    x1,y1,x2,y2,x3,y3,y4 = find_landmarks(image_gray, src, faces, file_name)
+    x1,y1,x2,y2,x3,y3,y4,img_full, img_cropped = find_landmarks(image_gray, src, faces, file_name)
     relevant = src[y1:y2, x1:x2]
-    grad = find_edges(face_pic, file_name)    
-    
+    grad = find_edges(face_pic, file_name)        
     relevant = grad[y1-y:y2-y, x1-x:x2-x]
-    plt.imshow(relevant, cmap = 'gray')
-    plt.title(file_name)
-    print(f"Fraction of {file_name} which is wrinkles: {np.sum(relevant) / relevant.size}")
+    # plt.imshow(relevant, cmap = 'gray')
+    # plt.title(file_name)
+    # plt.figure()
+    # plt.imshow(img_full)
+    # plt.figure()
+    # plt.imshow(img_cropped)
+    # print(f"Fraction of {file_name} which is wrinkles: {np.sum(relevant) / relevant.size}")
     swatch1 = src[y1:y2, x1:x2]
     swatch2 = src[y4:y3, x3:x1]
     def get_avg(swatch):
@@ -161,20 +179,27 @@ def run_image(folder, file_name):
         return a
     a1 = get_avg(swatch1)
     a2 = get_avg(swatch2)
-    print(f"Color distance: {np.linalg.norm(a1-a2)}")
+    # print(f"Color distance: {np.linalg.norm(a1-a2)}")
+    return AnalResult(folder + file_name + '.jpg',
+                      img_full, img_cropped, grad, relevant, 
+                      np.sum(relevant) / relevant.size,
+                      np.linalg.norm(a1-a2))
 
 folder = "D:\\Documents\\tiktok-live-graphs\\makeup-overtime\\"
-# file_name = "covergirl end.jpg"
-product = 'loreal'
-for stage in ['control', 'start', 'end']:
-    run_image(folder, f'{product} {stage}')
+def run_folder(folder):
+    # file_name = "covergirl end.jpg"
+    product = 'Maybelline'
+    results = []
+    for stage in ['control', 'start', 'end']:
+        results.append(run_image(folder, f'{product} {stage}'))
+    return results
 
 
 # def build_filters():
 #     filters = []
 #     ksize = 40
 #     for theta in np.arange(0, np.pi, np.pi / 8):
-#         for lamda in np.arange(0, np.pi, np.pi/4):
+#         for lamda in np.arange(0, enp.pi, np.pi/4):
 #             kern = cv2.getGaborKernel((ksize, ksize), 4.0, theta, 10.0, 0.5, 0, ktype=cv2.CV_32F)
 #             kern /= 1.5*kern.sum()
 #             filters.append(kern)
