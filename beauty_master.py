@@ -32,12 +32,17 @@ def make_qoves_df(path):
         output['album url'] = 'https://imgur.com/a/' + album_id
         df = df.append(output)
     
+    df['Confidence'] = df['Confidence'].astype('float')
+    table = pd.pivot_table(df, values = 'Confidence', columns ='Flaw', index = 'Image')
+    table.to_csv(path + 'qoves_pivot.csv')
     df.to_csv(path + 'qoves.csv')
 
 def ben_anal_single(folder, title):
     result = face.run_image(folder, 
                             title)
     output_folder = folder + 'output/'
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
     gray = cv2.cvtColor(result.edge_cropped, cv2.COLOR_GRAY2RGB) * 255
     cv2.imwrite(output_folder + title + ' edge cropped.jpg', gray)
     cv2.imwrite(output_folder + title + ' edge full.jpg', 
@@ -61,3 +66,6 @@ def run_all(path):
 
 path = "D:/Documents/tiktok-live-graphs/makeup-bb/"
 run_all(path)
+# df = pd.read_csv(path + 'qoves.csv')
+# table = pd.pivot_table(df, values = 'Confidence', columns ='Flaw', index = 'Image')
+# table.to_csv(path + 'qoves_pivot.csv')
