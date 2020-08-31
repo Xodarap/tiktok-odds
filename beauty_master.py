@@ -15,6 +15,8 @@ import glob
 import ntpath
 import cv2
 import numpy as np
+from itertools import chain
+import functools as f
 
 def make_qoves_df(path):
     folder_name = os.path.basename((path[:-1]))
@@ -43,28 +45,55 @@ def ben_anal_single(folder, title):
     output_folder = folder + 'output/'
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    gray = cv2.cvtColor(result.edge_cropped, cv2.COLOR_GRAY2RGB) * 255
-    cv2.imwrite(output_folder + title + ' edge cropped.jpg', gray)
-    cv2.imwrite(output_folder + title + ' edge full.jpg', 
-                cv2.cvtColor(result.edge_full, cv2.COLOR_GRAY2RGB) * 255)
-    cv2.imwrite(output_folder + title + ' cropped.jpg', cv2.cvtColor(result.img_cropped, cv2.COLOR_BGR2RGB))
-    cv2.imwrite(output_folder + title + ' full.jpg', cv2.cvtColor(result.img_full, cv2.COLOR_BGR2RGB))
-    return [title, result.color_distance, result.wrinkle_percent]
+    styles = [{'title': 'plain', 'fn': result['sub pic'], 
+               'conversion': lambda i: cv2.cvtColor(i, cv2.COLOR_BGR2RGB)},
+              {'title': 'edge', 'fn': result['grad pic'], 
+               'conversion': lambda i: cv2.cvtColor(i, cv2.COLOR_GRAY2RGB) * 255}]
+    result_table = []
+    for style in styles:
+        for side in ['left', 'right']:
+            side_results = [title, side]
+            for part in ['eye', 'cheek', 'full']:
+                subtitle = f'{side} {part} square'
+                image = style['fn'](subtitle)
+                cv2.imwrite(output_folder + f'{title} {subtitle} {style["title"]}.jpg', 
+                            style['conversion'](image))
+                if part != 'full':
+                    side_results.append(result[side + ' results'][part + ' wrinkle percent'])
+            
+            side_results.append(result[side + ' results']['color distance'])
+            if style['title'] == 'plain':
+                result_table.append(side_results)
+        full_key = 'image' if style['title'] =='plain' else 'gradient'
+        cv2.imwrite(output_folder + f'{title} {style["title"]}.jpg', 
+                            style['conversion'](result[full_key + ' full']))
+    # gray = cv2.cvtColor(result.edge_cropped, cv2.COLOR_GRAY2RGB) * 255
+    # cv2.imwrite(output_folder + title + ' edge cropped.jpg', gray)
+    # cv2.imwrite(output_folder + title + ' edge full.jpg', 
+    #             cv2.cvtColor(result.edge_full, cv2.COLOR_GRAY2RGB) * 255)
+    # cv2.imwrite(output_folder + title + ' cropped.jpg', cv2.cvtColor(result.img_cropped, cv2.COLOR_BGR2RGB))
+    # cv2.imwrite(output_folder + title + ' full.jpg', cv2.cvtColor(result.img_full, cv2.COLOR_BGR2RGB))
+    return result_table
 
 def ben_anal(path):
     images = glob.glob(path + '*.jpg')
     results = []
     for image in images:
         title = os.path.splitext(ntpath.basename(image))[0]
-        results.append(ben_anal_single(path, title))
-    ben_df = pd.DataFrame(results, columns = ['Image', 'Color Distance', 'Wrinkle Percent'])
+        #todo: just +?
+        results = f.reduce(lambda x, y: x+y, [ben_anal_single(path, title)], results)
+    ben_df = pd.DataFrame(results, 
+                          columns = ['Image', 'Face Side', 
+                                     'Eye Wrinkle Percent', 
+                                     'Cheek Wrinkle Percent', 'Color Distance'])
     ben_df.to_csv(path + 'ben.csv')
 
+# [[x]] -> [[x]] -> [[x]]
 def run_all(path):
     ben_anal(path)
-    make_qoves_df(path)
+    # make_qoves_df(path)
 
-path = "D:/Documents/tiktok-live-graphs/makeup-bb/"
+path = "D:/Documents/tiktok-live-graphs/mmmmarkie/"
 run_all(path)
 # df = pd.read_csv(path + 'qoves.csv')
 # table = pd.pivot_table(df, values = 'Confidence', columns ='Flaw', index = 'Image')

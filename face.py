@@ -144,8 +144,9 @@ def find_landmarks(image_gray, image_cropped, faces, title):
         'right eye square': build_eye(land_array[46], land_array[47],
                                      land_array[42], land_array[43],
                                      False),
-        'left face': (Landmark(*land_array[17]), Landmark(*land_array[51])),
-        'right face': (Landmark(*land_array[51]), Landmark(*land_array[26]))
+        'left full square': (Landmark(*land_array[17]), Landmark(*land_array[51])),
+        'right full square': (Landmark(*land_array[51]), Landmark(*land_array[26])),
+        'all': land_array
         }
     landmark_dictionary['left cheek square'] = build_cheek(*landmark_dictionary['left eye square'],
                                                             land_array[30], True)
@@ -215,8 +216,10 @@ def eval_squares(src, grad, offset_x, offset_y, eye_square, cheek_square):
     x2 = max(xa, xb)
     x3 = min(xa2, xb2)
     x4 = max(xa2, xb2)
-    eg = grad[y1-offset_y:y2-offset_y, x1-offset_x:x2-offset_x]
-    cg = grad[y3-offset_y:y4-offset_y, x3-offset_x:x4-offset_x]
+    eg = get_square(grad, eye_square, offset_x, offset_y)
+    cg = get_square(grad, cheek_square, offset_x, offset_y)
+    # eg = grad[y1-offset_y:y2-offset_y, x1-offset_x:x2-offset_x]
+    # cg = grad[y3-offset_y:y4-offset_y, x3-offset_x:x4-offset_x]
     swatch1 = src[y1:y2, x1:x2]
     swatch2 = src[y3:y4, x3:x4]
     return eg, cg, swatch1, swatch2
@@ -228,58 +231,68 @@ def get_square(image, pair, offset_x = 0, offset_y = 0):
     (y1, y2) = (min(ya, yb) - offset_y, max(ya, yb) - offset_y)    
     (x1, x2) = (min(xa, xb) - offset_x, max(xa, xb) - offset_x)
     return image[y1:y2, x1:x2]
-
+def get_avg(swatch):
+    return swatch.mean(axis=0).mean(axis=0)
 def square_to_points(p1, p2):
     (x1, y1) = p1.to_tuple()
     (x2, y2) = p2.to_tuple()
     return x1, y1, x2, y2
 
+def evaluate_half(src, grad, x, y, eye_square, cheek_square):
+    eg, cg, es, cs = eval_squares(src, grad, x, y, eye_square, cheek_square)
+    return {
+        'eye wrinkle percent': np.sum(eg) / eg.size,
+        'cheek wrinkle percent': np.sum(cg) / cg.size,
+        'color distance': np.linalg.norm(get_avg(es) - get_avg(cs))
+        }
 def run_image(folder, file_name, show = False):
     src = cv2.imread(folder + file_name + '.jpg')
     src2 = src.copy()
     src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
     
     faces, image_gray = find_faces(src)
-    (x,y,w,d) = faces[0]
-    face_pic = src2[y:y+d, x:x+w]
     x1,y1,x2,y2,x3,y3,y4,img_full, img_cropped,landmark_dictionary = find_landmarks(image_gray, src, faces, file_name)
 
+    (x,y,w,d) = faces[0]
+    chin_y = int(landmark_dictionary['all'][8][1])
+    d = max(d, chin_y-y) # make sure pic goes to bottom of chin
+    face_pic = src2[y:y+d, x:x+w]
     grad = find_edges(face_pic, file_name)        
-    def get_avg(swatch):
-        a = swatch.mean(axis=0).mean(axis=0)
-        # plt.figure()
-        # plt.imshow([[a.astype('int32')] * 5] * 5)
-        return a
-    leg, lcg, ls1, ls2 = eval_squares(src, grad, x, y, landmark_dictionary['left eye square'],
-                                              landmark_dictionary['left cheek square'])
-    reg, rcg, rs1, rs2 = eval_squares(src, grad, x, y, landmark_dictionary['right eye square'],
-                                              landmark_dictionary['right cheek square'])
-    a1 = get_avg(ls1)
-    a2 = get_avg(ls2)
+
+
+    sub_pic = lambda key: get_square(src, landmark_dictionary[key])
+    grad_pic = lambda key: get_square(grad, landmark_dictionary[key], x, y)
     
     if show:
         fig, axs = plt.subplots(3,3)
         axs[0,1].imshow(img_full)
-        axs[1,0].imshow(get_square(src, landmark_dictionary['left face']))
-        axs[1,1].imshow(ls1)
-        axs[1,2].imshow(ls2)
-        axs[2,0].imshow(get_square(src, landmark_dictionary['right face']))
-        axs[2,1].imshow(rs1)
-        axs[2,2].imshow(rs2)
+        axs[1,0].imshow(sub_pic('left full square'))
+        axs[1,1].imshow(sub_pic('left eye square'))
+        axs[1,2].imshow(sub_pic('left cheek square'))
+        axs[2,0].imshow(sub_pic('right full square'))
+        axs[2,1].imshow(sub_pic('right eye square'))
+        axs[2,2].imshow(sub_pic('right cheek square'))
         
+       
         fig, axs = plt.subplots(3,3)
         axs[0,1].imshow(grad)
-        axs[1,0].imshow(get_square(grad, landmark_dictionary['left face'], x, y))
-        axs[1,1].imshow(leg)
-        axs[1,2].imshow(lcg)
-        axs[2,0].imshow(get_square(grad, landmark_dictionary['right face'], x, y))
-        axs[2,1].imshow(reg)
-        axs[2,2].imshow(rcg)
+        axs[1,0].imshow(grad_pic('left full square'))
+        axs[1,1].imshow(grad_pic('left eye square'))
+        axs[1,2].imshow(grad_pic('left cheek square'))
+        axs[2,0].imshow(grad_pic('right full square'))
+        axs[2,1].imshow(grad_pic('right eye square'))
+        axs[2,2].imshow(grad_pic('right cheek square'))
     # print(f"Color distance: {np.linalg.norm(a1-a2)}")
-    return AnalResult(folder + file_name + '.jpg',
-                      img_full, img_cropped, grad, relevant, 
-                      np.sum(leg) / leg.size,
-                      np.linalg.norm(a1-a2))
+    return {'image path': folder + file_name + '.jpg',
+            'image full': img_full,
+            'gradient full': grad,
+            'landmarks': landmark_dictionary,
+            'left results': evaluate_half(src, grad, x, y, landmark_dictionary['left eye square'],
+                                              landmark_dictionary['left cheek square']),
+            'right results': evaluate_half(src, grad, x, y, landmark_dictionary['right eye square'],
+                                              landmark_dictionary['right cheek square']),
+            'sub pic': sub_pic,
+            'grad pic': grad_pic}
 
 folder = "D:\\Documents\\tiktok-live-graphs\\makeup-overtime\\"
 def run_folder(folder):
@@ -290,8 +303,8 @@ def run_folder(folder):
         results.append(run_image(folder, f'{product} {stage}'))
     return results
 
-results = run_image('D:\\Documents\\tiktok-live-graphs\\mmmmarkie\\', 
-                    'foundation half primer', True)
+# results = run_image('D:\\Documents\\tiktok-live-graphs\\mmmmarkie\\', 
+#                     'foundation half primer', True)
 # print(results)
 # def build_filters():
 #     filters = []
