@@ -10,9 +10,9 @@ import os
 load_dotenv()
 conn2=psycopg2.connect(os.getenv("DB_URL"))
 cur2 = conn2.cursor()
-for filename in os.listdir('D:\\Documents\\tiktok_banque\\v3'):
+for filename in os.listdir('D:\\Documents\\tiktok_banque\\v4'):
     if filename.endswith(".json") : 
-        f = open('D:\\Documents\\tiktok_banque\\v3\\' + filename, 'rb')
+        f = open('D:\\Documents\\tiktok_banque\\v4\\' + filename, 'rb')
         data = json.load(f)
         f.close()
         try:

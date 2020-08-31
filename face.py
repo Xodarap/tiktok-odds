@@ -7,7 +7,7 @@ Created on Thu Aug 20 18:41:31 2020
 
 import cv2
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import os
 import urllib.request as urlreq
 
@@ -53,6 +53,14 @@ def find_faces(src):
     # plt.title('Face Detection')
     # plt.figure()
     return faces, image_gray
+
+class Landmark():
+    def __init__(self, x, y):
+        self.x = int(x)
+        self.y = int(y)
+    
+    def to_tuple(self):
+        return (self.x, self.y)
 
 def find_landmarks(image_gray, image_cropped, faces, title):
     # save facial landmark detection model's url in LBFmodel_url variable
@@ -101,16 +109,61 @@ def find_landmarks(image_gray, image_cropped, faces, title):
     x3 = int(x3)
     y3 = int(y1 - 5 * (y1 - y2))
     y4 = y3 + int(y1- y2)
-    cv2.rectangle(image_cropped, (x1, y1), (x2, y2), (255, 255, 255), 2)
-    cv2.rectangle(image_cropped, (x3, y3), (x1, y4), (255, 255, 255), 2)
+    # cv2.rectangle(image_cropped, (x1, y1), (x2, y2), (255, 255, 255), 2)
+    # cv2.rectangle(image_cropped, (x3, y3), (x1, y4), (255, 255, 255), 2)
     x5,y5 = landmarks[0][0][18]
     x6,y6 = landmarks[0][0][51]
     x5,y5,x6,y6 = map(int, [x5,y5,x6,y6])
+    def build_eye(l1, l2, m, u, left_side):
+        comp_fn = max if left_side else min
+        comp_amount = 1 if left_side else -1
+        (l1x, l1y) = l1
+        (l2x, l2y) = l2
+        (mx, my) = m
+        (ux, uy) = u
+        left_x = comp_fn(l1x, l2x)
+        right_x = mx + comp_amount * (0.2 * abs(left_x - mx))
+        top_y = max(l1y, l2y) + 0.3 * abs(max(l1y, l2y) - uy)
+        bottom_y = top_y + (top_y - uy)
+        return (Landmark(left_x, top_y), Landmark(right_x, bottom_y))
+    def build_cheek(eye1, eye2, nose_point, left):
+        (x1, y1) = eye1.to_tuple()
+        (x2, y2) = eye2.to_tuple()
+        (_, nose_y) = nose_point
+        top_y = nose_y
+        bottom_y = nose_y + (y2-y1)
+        factor = 1 if left else -1
+        inner_x = x1 - factor * abs(x2-x1)
+        outer_x = inner_x + factor * abs(x2-x1)
+        return (Landmark(inner_x, top_y), Landmark(outer_x, bottom_y))
+    land_array = landmarks[0][0]
+    landmark_dictionary = {
+        'left eye square': build_eye(land_array[41], land_array[40],
+                                     land_array[39], land_array[38],
+                                     True),
+        'right eye square': build_eye(land_array[46], land_array[47],
+                                     land_array[42], land_array[43],
+                                     False),
+        'left face': (Landmark(*land_array[17]), Landmark(*land_array[51])),
+        'right face': (Landmark(*land_array[51]), Landmark(*land_array[26]))
+        }
+    landmark_dictionary['left cheek square'] = build_cheek(*landmark_dictionary['left eye square'],
+                                                            land_array[30], True)
+    landmark_dictionary['right cheek square'] = build_cheek(*landmark_dictionary['right eye square'],
+                                                            land_array[30], False)
+    (p1, p2) = landmark_dictionary['left eye square']
+    cv2.rectangle(image_cropped, p1.to_tuple(), p2.to_tuple(), (255, 255, 255), 2)
+    (p1, p2) = landmark_dictionary['right eye square']
+    cv2.rectangle(image_cropped, p1.to_tuple(), p2.to_tuple(), (255, 255, 255), 2)
+    (p1, p2) = landmark_dictionary['left cheek square']
+    cv2.rectangle(image_cropped, p1.to_tuple(), p2.to_tuple(), (255, 255, 255), 2)
+    (p1, p2) = landmark_dictionary['right cheek square']
+    cv2.rectangle(image_cropped, p1.to_tuple(), p2.to_tuple(), (255, 255, 255), 2)
     # plt.axis("off")
     # image_cropped = image_cropped[y5:y6,x5:x6]
     # plt.imshow(image_cropped)
     # plt.figure()
-    return x1,y1,x2,y2,x3,y3,y4,image_cropped,image_cropped[y5:y6,x5:x6]
+    return x1,y1,x2,y2,x3,y3,y4,image_cropped,image_cropped[y5:y6,x5:x6],landmark_dictionary
 
 def find_edges(src2, title):
     scale = 1
@@ -151,7 +204,37 @@ class AnalResult():
         self.wrinkle_percent = wrinkle_percent
         self.color_distance = color_distance
 
-def run_image(folder, file_name):
+def eval_squares(src, grad, offset_x, offset_y, eye_square, cheek_square):
+    (p1, p2) = eye_square
+    (xa, y1) = p1.to_tuple()
+    (xb, y2) = p2.to_tuple()
+    (p1, p2) = cheek_square
+    (xa2, y3) = p1.to_tuple()
+    (xb2, y4) = p2.to_tuple()
+    x1 = min(xa, xb)
+    x2 = max(xa, xb)
+    x3 = min(xa2, xb2)
+    x4 = max(xa2, xb2)
+    eg = grad[y1-offset_y:y2-offset_y, x1-offset_x:x2-offset_x]
+    cg = grad[y3-offset_y:y4-offset_y, x3-offset_x:x4-offset_x]
+    swatch1 = src[y1:y2, x1:x2]
+    swatch2 = src[y3:y4, x3:x4]
+    return eg, cg, swatch1, swatch2
+
+def get_square(image, pair, offset_x = 0, offset_y = 0):
+    (p1, p2) = pair
+    (xa, ya) = p1.to_tuple()
+    (xb, yb) = p2.to_tuple()
+    (y1, y2) = (min(ya, yb) - offset_y, max(ya, yb) - offset_y)    
+    (x1, x2) = (min(xa, xb) - offset_x, max(xa, xb) - offset_x)
+    return image[y1:y2, x1:x2]
+
+def square_to_points(p1, p2):
+    (x1, y1) = p1.to_tuple()
+    (x2, y2) = p2.to_tuple()
+    return x1, y1, x2, y2
+
+def run_image(folder, file_name, show = False):
     src = cv2.imread(folder + file_name + '.jpg')
     src2 = src.copy()
     src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
@@ -159,30 +242,43 @@ def run_image(folder, file_name):
     faces, image_gray = find_faces(src)
     (x,y,w,d) = faces[0]
     face_pic = src2[y:y+d, x:x+w]
-    x1,y1,x2,y2,x3,y3,y4,img_full, img_cropped = find_landmarks(image_gray, src, faces, file_name)
-    relevant = src[y1:y2, x1:x2]
+    x1,y1,x2,y2,x3,y3,y4,img_full, img_cropped,landmark_dictionary = find_landmarks(image_gray, src, faces, file_name)
+
     grad = find_edges(face_pic, file_name)        
-    relevant = grad[y1-y:y2-y, x1-x:x2-x]
-    # plt.imshow(relevant, cmap = 'gray')
-    # plt.title(file_name)
-    # plt.figure()
-    # plt.imshow(img_full)
-    # plt.figure()
-    # plt.imshow(img_cropped)
-    # print(f"Fraction of {file_name} which is wrinkles: {np.sum(relevant) / relevant.size}")
-    swatch1 = src[y1:y2, x1:x2]
-    swatch2 = src[y4:y3, x3:x1]
     def get_avg(swatch):
         a = swatch.mean(axis=0).mean(axis=0)
         # plt.figure()
         # plt.imshow([[a.astype('int32')] * 5] * 5)
         return a
-    a1 = get_avg(swatch1)
-    a2 = get_avg(swatch2)
+    leg, lcg, ls1, ls2 = eval_squares(src, grad, x, y, landmark_dictionary['left eye square'],
+                                              landmark_dictionary['left cheek square'])
+    reg, rcg, rs1, rs2 = eval_squares(src, grad, x, y, landmark_dictionary['right eye square'],
+                                              landmark_dictionary['right cheek square'])
+    a1 = get_avg(ls1)
+    a2 = get_avg(ls2)
+    
+    if show:
+        fig, axs = plt.subplots(3,3)
+        axs[0,1].imshow(img_full)
+        axs[1,0].imshow(get_square(src, landmark_dictionary['left face']))
+        axs[1,1].imshow(ls1)
+        axs[1,2].imshow(ls2)
+        axs[2,0].imshow(get_square(src, landmark_dictionary['right face']))
+        axs[2,1].imshow(rs1)
+        axs[2,2].imshow(rs2)
+        
+        fig, axs = plt.subplots(3,3)
+        axs[0,1].imshow(grad)
+        axs[1,0].imshow(get_square(grad, landmark_dictionary['left face'], x, y))
+        axs[1,1].imshow(leg)
+        axs[1,2].imshow(lcg)
+        axs[2,0].imshow(get_square(grad, landmark_dictionary['right face'], x, y))
+        axs[2,1].imshow(reg)
+        axs[2,2].imshow(rcg)
     # print(f"Color distance: {np.linalg.norm(a1-a2)}")
     return AnalResult(folder + file_name + '.jpg',
                       img_full, img_cropped, grad, relevant, 
-                      np.sum(relevant) / relevant.size,
+                      np.sum(leg) / leg.size,
                       np.linalg.norm(a1-a2))
 
 folder = "D:\\Documents\\tiktok-live-graphs\\makeup-overtime\\"
@@ -194,7 +290,9 @@ def run_folder(folder):
         results.append(run_image(folder, f'{product} {stage}'))
     return results
 
-
+results = run_image('D:\\Documents\\tiktok-live-graphs\\mmmmarkie\\', 
+                    'foundation half primer', True)
+# print(results)
 # def build_filters():
 #     filters = []
 #     ksize = 40

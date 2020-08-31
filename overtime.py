@@ -93,7 +93,7 @@ cur.execute("""select all_data.id,
                  from tiktok
                  where (tiktok.json -> 'author'::text) ->> 'uniqueId'::text = 'benthamite'
                  order by to_timestamp((tiktok.json -> 'createTime'::text)::integer::double precision) desc
-                 limit 2
+                 limit 3
              ) q
          ) 
           --union all (select 6852376935411010822, 0, 0, 0, 0, to_timestamp(0), to_timestamp(0), 0)
