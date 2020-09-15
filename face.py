@@ -49,6 +49,8 @@ def find_faces(src):
         cv2.rectangle(image_template,(x,y),(x2, y2),(255, 255, 255), 5)
     
     # plt.axis("off")
+    # if multiple faces, choose the biggest
+    faces = sorted(faces, key = lambda x: -x[3])
     # plt.imshow(image_template)
     # plt.title('Face Detection')
     # plt.figure()
@@ -187,8 +189,8 @@ def find_edges(src2, title):
     grad = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
     grad = np.array(grad)
     threshold = np.mean(grad) + 1.3 * np.std(grad)
-    grad[grad < threshold] = 0
-    grad[grad >= threshold] = 1
+    # grad[grad < threshold] = 0
+    # grad[grad >= threshold] = 1
     # plt.imshow(grad, cmap = 'gray')
     # plt.title(title)
     # plt.figure()
@@ -275,7 +277,7 @@ def run_image(folder, file_name, show = False):
         
        
         fig, axs = plt.subplots(3,3)
-        axs[0,1].imshow(grad)
+        axs[0,1].imshow(grad,cmap = 'gray')
         axs[1,0].imshow(grad_pic('left full square'))
         axs[1,1].imshow(grad_pic('left eye square'))
         axs[1,2].imshow(grad_pic('left cheek square'))
@@ -294,7 +296,7 @@ def run_image(folder, file_name, show = False):
             'sub pic': sub_pic,
             'grad pic': grad_pic}
 
-folder = "D:\\Documents\\tiktok-live-graphs\\makeup-overtime\\"
+folder = "D:\\Documents\\tiktok-live-graphs\\makeup-followers\\naima\\"
 def run_folder(folder):
     # file_name = "covergirl end.jpg"
     product = 'Maybelline'
@@ -303,6 +305,7 @@ def run_folder(folder):
         results.append(run_image(folder, f'{product} {stage}'))
     return results
 
+run_image(folder, 'Covergirl No Makeup', True)
 # results = run_image('D:\\Documents\\tiktok-live-graphs\\mmmmarkie\\', 
 #                     'foundation half primer', True)
 # print(results)

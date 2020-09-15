@@ -2500,7 +2500,7 @@ for i in range(0,6000):
     for name in names:
         print(name)
         try:
-            tiktoks = api.byUsername(name, count=50)
+            tiktoks = api.byUsername(name, count=100)
         except Exception as e:
             print(e)
             continue
@@ -2510,11 +2510,13 @@ for i in range(0,6000):
         for t in tiktoks:
             new_t=json.dumps(t)
             cur.execute('INSERT INTO tiktok (time,json) VALUES (%s,%s)', (t_time,new_t))
-            if i % 1400 == 0 and name == 'benthamite':
+            if i % 144 == 0 and name == 'benthamite':
                 vid_id = t['id']
                 ins = api.get_insights(name, vid_id)
                 cur2.execute('insert into tiktok.insights values (%s, %s, %s)',
-                           (vid_id, t_time,json.dumps(ins)))
+                            (vid_id, t_time,json.dumps(ins)))
+        if i % 144 == 0 and name == 'benthamite':
+                print('insight pull')
         conn.commit()
         conn2.commit()
     

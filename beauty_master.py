@@ -75,6 +75,14 @@ def ben_anal_single(folder, title):
     # cv2.imwrite(output_folder + title + ' full.jpg', cv2.cvtColor(result.img_full, cv2.COLOR_BGR2RGB))
     return result_table
 
+def make_summary(ben_df):
+    sort_order = {'No Makeup': 0, 'Start': 1, 'Midday': 2, 'End': 3}
+    ben_df['time_sort_order'] = ben_df['Time'].map(lambda k: sort_order[k])
+    summary_table = ben_df.groupby(['Product', 'Time']).mean()
+    summary_table.sort_values(by = ['Product', 'time_sort_order'], inplace = True)
+    summary_table.to_csv(path + 'ben_summary.csv')
+    
+
 def ben_anal(path):
     images = glob.glob(path + '*.jpg')
     results = []
@@ -86,14 +94,18 @@ def ben_anal(path):
                           columns = ['Image', 'Face Side', 
                                      'Eye Wrinkle Percent', 
                                      'Cheek Wrinkle Percent', 'Color Distance'])
+    names = ben_df['Image'].str.split(' ').str
+    ben_df['Time'] = names[1:].str.join(' ')
+    ben_df['Product'] = names[0]
     ben_df.to_csv(path + 'ben.csv')
+    make_summary(ben_df)
 
 # [[x]] -> [[x]] -> [[x]]
 def run_all(path):
     ben_anal(path)
     # make_qoves_df(path)
 
-path = "D:/Documents/tiktok-live-graphs/mmmmarkie/"
+path = "D:/Documents/tiktok-live-graphs/makeup-followers/naima/"
 run_all(path)
 # df = pd.read_csv(path + 'qoves.csv')
 # table = pd.pivot_table(df, values = 'Confidence', columns ='Flaw', index = 'Image')

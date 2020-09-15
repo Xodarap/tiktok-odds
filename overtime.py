@@ -51,7 +51,16 @@ id_map = {6852376935411010822: 'posting frequency',
          6865093559071165702: 'cat tag deleted',
          6864703522835942662: 'live trend',
          6863841792542985477: 'makeup wrinkle',
-         6862752188540767493: 'makeup popular'
+         6862752188540767493: 'makeup popular',
+         6866244604451228934: 'concealer algorithm 1',
+         6866473951296490758: 'concealer algorithm 2',
+         6866549430829600005: 'concealer algorithm 3',
+         6868006188814961926: 'makeup merideth',
+         6868416928067636486: 'clf',
+         6868461061708844294: 'makup jakob 1',
+         6869035723715136774: 'makeup jakob 2',
+         6868846190990085382: 'clf2',
+         
          }
 
 conn=psycopg2.connect('dbname=postgres user=postgres')
@@ -131,7 +140,7 @@ def interpolate_zeros(vals):
 def make_plot(df, ax, x, y, y2):
     l1, = ax.plot(df[x], df[y], 'b-', label = y)
     ax2 = ax.twinx()
-    l2, = ax2.plot(df[x], df[y2], 'r-', label = y2)
+    l2, = ax2.plot(df[x], df[y2], 'rx-', label = y2)
     ax.set_title(y2)
     ax.legend(handles = [l1, l2])
 
@@ -184,6 +193,12 @@ vid_start = vid_start.total_seconds() / 60
 vid_end = (pd.Timestamp('2020-08-10 20:52:00-07:00')) - pd.Timestamp('2020-08-07 13:57:31-07:00')
 vid_end  = vid_end.total_seconds() / 60
 # ax.plot([vid_end , vid_end ], ax.get_ylim(), '--', label = 'Live End')
+
 ax.legend()
+fig, axs = plt.subplots(1,1, figsize = (7, 5))
+for idx in ids:
+    plot_id(idx)
+ax = axs #[0]
+
 conn.close()
 fig.tight_layout()

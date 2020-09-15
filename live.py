@@ -93,23 +93,27 @@ def print_stats(df):
 
 def print_extra_stats(username):
     cur.execute('''
-                select id,
-                sum(case when hashtag_name is not null then 1 else 0 end) tags,
-                sum(case when tagged_user is not null then 1 else 0 end) users
-                from (
-                select distinct id, hashtag_name, tagged_user
-                 from tiktok.videos_normalized_all m
-                 left join tiktok.text_extra using (id)
-                 where author = (%s)) q
-                 group by id
+                
+select id,
+sum(case when hashtag_name is not null then 1 else 0 end) tags,
+sum(case when tagged_user is not null then 1 else 0 end) users
+from (
+select distinct id, hashtag_name, tagged_user
+from
+tiktok.text_extra 
+where author = (%s) )q
+group by id
                 ''', [username])        
     df = pd.DataFrame(cur.fetchall(), 
                                columns = [desc[0] for desc in cur.description])   
     print(f"Average hashtags: {np.mean(df['tags'])}")
     print(f"Average tagged users: {np.mean(df['users'])}")
 def get_tag(tag):
-    existing = cur.execute('select video_count, view_count from tiktok.tag_data where name = %s', [tag])     
-    return existing.fetchall()[0]
+    cur.execute('select video_count, view_count from tiktok.tag_data where name = %s', (tag,))    
+    existing = cur.fetchall()
+    if len(existing) == 0:
+        return None
+    return existing[0]
 def save_tag(tag, api):
     res = api.getHashtagObject(tag)
     cid = int(res['challengeInfo']['challenge']['id'])
@@ -121,32 +125,43 @@ def save_tag(tag, api):
             	VALUES (%s, %s, %s, %s, %s);
                 ''', (tag, vid_count, view_count, cid, str(datetime.datetime.now())))
     conn.commit()
-
+    print(f'saved {tag}')
+def get_or_save_tag(tag, api):
+    try:
+        if tag == '':
+            return [0, 0]
+        existing = get_tag(tag)
+        if existing is not None:
+            return existing
+        save_tag(tag, api)
+        return get_tag(tag)
+    except:
+        return [0, 0]
 def print_tag_stats(username):
     api = TikTokApi()
     cur.execute('''
                 select hashtag_name, count(1)
-                from (
-        select distinct on (id, hashtag_name) hashtag_name
-         from tiktok.videos_normalized_all m
-         left join tiktok.text_extra using (id)
-         where author = (%s)) q
-         group by hashtag_name
-         order by count(1) desc 
-         limit 10
+from (
+	select distinct on (id, hashtag_name) hashtag_name
+	from tiktok.text_extra 
+	where author = (%s)
+) q2
+group by hashtag_name
+order by count(1) desc 
+limit 10
             ''', [username])        
     df = pd.DataFrame(cur.fetchall(), 
                                columns = [desc[0] for desc in cur.description])   
                               
     def vid_count(tag, api):
         try:
-            
-            res = api.getHashtagObject(tag)
-            return [res['challengeInfo']['stats']['videoCount'], res['challengeInfo']['stats']['viewCount']]
+            return get_or_save_tag(tag, api)
+            # res = api.getHashtagObject(tag)
+            # return [res['challengeInfo']['stats']['videoCount'], res['challengeInfo']['stats']['viewCount']]
         
         except:
             return [0, 0]
-    res = [vid_count(tag, api) for tag in df['hashtag_name']]
+    res = [get_or_save_tag(tag, api) for tag in df['hashtag_name']]
     df['video_count'] = [r[0] for r in res]
     df['video_count_human'] = ["{:,}".format(r[0]) for r in res]
     df['view_count'] = [r[1] for r in res]
@@ -159,8 +174,8 @@ def print_tag_stats(username):
                 select hashtag_name, count(1)
                 from (
         select distinct on (id, hashtag_name) hashtag_name
-         from tiktok.videos_normalized_all m
-         left join tiktok.text_extra using (id)
+         from 
+         tiktok.text_extra
          where author = (%s)
          and hashtag_name in (
              'fyp',
@@ -225,7 +240,7 @@ def run_user(username):
     df = pd.DataFrame(res, columns = colnames)
     df['VPL'] = df['play_count'] / df['like_count']
     df['Engagements'] = np.sum(df[['like_count', 'share_count', 'comment_count']],
-                               axis = 1)
+                                axis = 1)
     df['VPE'] = df['play_count'] / df['Engagements']
     
     try:
